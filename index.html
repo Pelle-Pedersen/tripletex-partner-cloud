@@ -8,10 +8,41 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.development.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<style>*{box-sizing:border-box;margin:0;padding:0;}body{background:#F3F6F9;font-family:'DM Sans',sans-serif;}</style>
+<style>*{box-sizing:border-box;margin:0;padding:0;}body{background:#F3F6F9;font-family:'DM Sans',sans-serif;}
+#gate{display:flex;align-items:center;justify-content:center;min-height:100vh;background:#F3F6F9;}
+#gate .box{background:#fff;border:1px solid #E0E5EC;border-radius:12px;padding:48px 40px;width:100%;max-width:380px;text-align:center;}
+#gate .logo{font-size:13px;font-weight:600;letter-spacing:.08em;color:#00835B;text-transform:uppercase;margin-bottom:24px;}
+#gate h2{font-size:20px;font-weight:700;color:#16213A;margin-bottom:8px;}
+#gate p{font-size:14px;color:#54698D;margin-bottom:28px;}
+#gate input{width:100%;padding:10px 14px;border:1px solid #E0E5EC;border-radius:8px;font-size:15px;outline:none;margin-bottom:12px;}
+#gate input:focus{border-color:#00835B;}
+#gate button{width:100%;padding:11px;background:#00835B;color:#fff;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;}
+#gate button:hover{background:#006647;}
+#gate .error{font-size:13px;color:#C23934;margin-top:10px;}
+</style>
 </head>
 <body>
-<div id="root"></div>
+<div id="gate">
+  <div class="box">
+    <div class="logo">Tripletex</div>
+    <h2>Partner Cloud Demo</h2>
+    <p>Enter the access password to continue.</p>
+    <input type="password" id="pw" placeholder="Password" onkeydown="if(event.key==='Enter')checkPw()"/>
+    <button onclick="checkPw()">Continue</button>
+    <div class="error" id="err"></div>
+  </div>
+</div>
+<script>
+  function checkPw(){
+    if(document.getElementById('pw').value==='Partner Cloud TT Demo'){
+      document.getElementById('gate').style.display='none';
+      document.getElementById('root').style.display='block';
+    } else {
+      document.getElementById('err').textContent='Incorrect password. Try again.';
+    }
+  }
+</script>
+<div id="root" style="display:none"></div>
 <script type="text/babel" data-presets="react">
 const { useState, useEffect, useReducer, createContext, useContext, useRef } = React;
 
