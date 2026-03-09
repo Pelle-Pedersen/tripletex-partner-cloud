@@ -4,14 +4,14 @@ A partner management portal built for Tripletex, designed to help internal teams
 
 ## Features
 
+- **Plan / Årshjul** — Annual goal tracking with quarterly breakdown, editable targets per partner
 - **Partner Overview** — Full list of partners with tier status, points, revenue, YTD kickback, and contact info
 - **Tier System** — Automatic Bronze / Silver / Gold classification based on accumulated points
-- **Lead Management** — Partners can submit and track leads; status changes trigger points and kickback calculations
+- **Lead Management** — Submit and track leads including referrals and accounting office referrals
 - **Customer Roster** — Per-partner customer list with ARR and status tracking
 - **Support Cases** — Log and manage support cases with priority, category, and comment threads
 - **Training & Certification** — Course library with point rewards and certification bonuses
-- **Activity Log** — Real-time feed of partner activity (leads, upgrades, completions)
-- **Analytics Dashboard** — Revenue, lead conversion, and tier distribution overview
+- **Analytics** — Charts for ARR per partner, lead status, submissions over time, and tier mix
 
 ## Tier Structure
 
@@ -23,38 +23,40 @@ A partner management portal built for Tripletex, designed to help internal teams
 
 ## Tech Stack
 
-- **React** (via CDN — no build step required)
-- **Tailwind CSS** (via CDN)
-- Single `.html` file — fully self-contained, no server needed
+- **React 18** (via CDN — no build step required)
+- **Chart.js 4** (via CDN — analytics charts)
+- Single `index.html` — fully self-contained, no server needed
 
 ## File Structure
 
 ```
 tripletex-partner-cloud-deploy/
-├── tripletex-partner-cloud_1.jsx    # React source (component logic)
-├── tripletex-partner-cloud_1.html  # Standalone all-in-one HTML file
-└── vercel-deploy/
-    ├── index.html                   # Production build (Vercel/Netlify ready)
-    ├── vercel.json                  # Vercel routing config
-    └── README.md                    # Deploy instructions
+├── index.html        # The app — open locally or deploy directly
+├── vercel.json       # Vercel routing config
+├── README.md
+├── src/
+│   └── app.jsx       # React source (readable reference)
+└── docs/
+    ├── use-cases.pdf
+    └── salesforce-pitch.pdf
 ```
 
 ## Run Locally
 
-Just open `tripletex-partner-cloud_1.html` in a browser — no install, no server needed.
+Open `index.html` in a browser — no install, no server needed.
 
 ## Deploy
 
 ### Vercel
-1. Go to [vercel.com/new](https://vercel.com/new)
-2. Deploy from the `vercel-deploy/` folder
+1. Connect this repo at [vercel.com/new](https://vercel.com/new)
+2. Leave root directory as `/`
 3. Done — you get a public URL instantly
 
 ### Netlify
 1. Go to [app.netlify.com/drop](https://app.netlify.com/drop)
-2. Drag the `vercel-deploy/index.html` file onto the page
+2. Drag `index.html` onto the page
 3. Done
 
 ## Status
 
-This is an internal prototype / demo application using mock data. Not connected to live Tripletex systems.
+Internal prototype / demo using mock data. Not connected to live Tripletex systems.
