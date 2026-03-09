@@ -1,0 +1,1171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Tripletex Partner Cloud</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.development.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.development.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+<style>*{box-sizing:border-box;margin:0;padding:0;}body{background:#F3F6F9;font-family:'DM Sans',sans-serif;}</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel" data-presets="react">
+const { useState, useEffect, useReducer, createContext, useContext } = React;
+
+/* ═══════════════════ DESIGN TOKENS ═══════════════════ */
+const C = {
+  green:"#00835B",greenDark:"#006647",greenDeep:"#004D35",greenLight:"#E8F5F0",greenMid:"#C2E0D6",
+  navy:"#16213A",navyBorder:"#1E2D4A",
+  white:"#FFFFFF",pageGrey:"#F3F6F9",cardBorder:"#E0E5EC",rowHover:"#F7FAFC",
+  text:"#16213A",textMid:"#54698D",textLight:"#8A9BB5",
+  gold:"#E8A200",goldLight:"#FFF4D6",
+  blue:"#0070D2",blueLight:"#EBF4FF",
+  red:"#C23934",redLight:"#FDECEA",
+  orange:"#E07B00",orangeLight:"#FFF0E0",
+};
+
+/* ═══════════════════ TIER CONFIG ═══════════════════ */
+const TIER_CONFIG = {
+  Bronze:{color:"#D4875A",bg:"#FFF0E4",border:"#D4875A",pointsMin:0,pointsMax:999,kickback:5,bonusPerClient:800,leadBonus:50,certBonus:200,mdf:0,benefits:["Partner Portal access","Basic training materials","Co-branded assets","Standard support SLA"]},
+  Silver:{color:"#3E5473",bg:"#F1F5FA",border:"#B0BEC5",pointsMin:1000,pointsMax:2999,kickback:10,bonusPerClient:1500,leadBonus:75,certBonus:350,mdf:5000,benefits:["All Bronze benefits","Priority support (4h SLA)","Quarterly business reviews","MDF 5,000 NOK/yr","Co-sell support"]},
+  Gold:{color:"#7A4800",bg:"#FFF4D6",border:"#F5C842",pointsMin:3000,pointsMax:Infinity,kickback:18,bonusPerClient:2500,leadBonus:150,certBonus:500,mdf:20000,benefits:["All Silver benefits","Dedicated partner manager","Premium co-marketing","MDF 20,000 NOK/yr","Annual summit invitation","Deal registration priority"]},
+};
+const TIERS = ["Bronze","Silver","Gold"];
+const NEXT_TIER = {Bronze:"Silver",Silver:"Gold",Gold:null};
+
+/* ═══════════════════ INITIAL DATA ═══════════════════ */
+const INIT_CUSTOMERS = {
+  1:[
+    {id:"ec1",name:"TechStart Norge AS",arr:84000,added:"2025-01-10",status:"Active",industry:"SaaS",size:"Large",notes:"Strategic account, wants API integration"},
+    {id:"ec2",name:"Bergstrøm Eiendom AS",arr:36000,added:"2025-01-22",status:"Active",industry:"Property",size:"Medium",notes:""},
+    {id:"ec3",name:"Kystfisk Holding",arr:48000,added:"2025-02-03",status:"Active",industry:"Fishing",size:"Medium",notes:""},
+    {id:"ec4",name:"Norsk Byggservice AS",arr:24000,added:"2025-02-14",status:"Pending",industry:"Trades",size:"Small",notes:"Awaiting contract sign-off"},
+    {id:"ec5",name:"Solberg Advokatfirma",arr:60000,added:"2025-02-28",status:"Active",industry:"Legal",size:"Large",notes:""},
+    {id:"ec6",name:"Viken Handel AS",arr:18000,added:"2025-03-01",status:"Active",industry:"Retail",size:"Small",notes:""},
+    {id:"ec7",name:"Arctic Logistics Group",arr:120000,added:"2025-03-04",status:"Active",industry:"Logistics",size:"Large",notes:"Upsell opportunity Q2"},
+  ],
+  2:[
+    {id:"ec8",name:"Haugesund Handel AS",arr:18000,added:"2025-01-15",status:"Active",industry:"Retail",size:"Small",notes:""},
+    {id:"ec9",name:"Meling Transport",arr:30000,added:"2025-02-02",status:"Active",industry:"Transport",size:"Medium",notes:""},
+    {id:"ec10",name:"Westcoast Bygg AS",arr:24000,added:"2025-02-18",status:"Pending",industry:"Trades",size:"Small",notes:"Demo scheduled Mar 15"},
+  ],
+  3:[
+    {id:"ec11",name:"Bryggen Kafé AS",arr:12000,added:"2024-11-10",status:"Active",industry:"F&B",size:"Small",notes:""},
+    {id:"ec12",name:"Bergen Maritime AS",arr:96000,added:"2024-12-05",status:"Active",industry:"Maritime",size:"Large",notes:""},
+    {id:"ec13",name:"Vestland Rekruttering",arr:36000,added:"2025-01-20",status:"Active",industry:"HR",size:"Medium",notes:""},
+    {id:"ec14",name:"Fiskebørsen AS",arr:48000,added:"2025-02-11",status:"Active",industry:"Fishing",size:"Medium",notes:""},
+    {id:"ec15",name:"HarbourTech Solutions",arr:72000,added:"2025-03-01",status:"Pending",industry:"Tech",size:"Large",notes:""},
+  ],
+  4:[
+    {id:"ec16",name:"Flåm Reiseliv AS",arr:14400,added:"2025-02-01",status:"Active",industry:"Tourism",size:"Small",notes:""},
+    {id:"ec17",name:"Sognefjord Bygg",arr:18000,added:"2025-02-20",status:"Active",industry:"Trades",size:"Small",notes:""},
+  ],
+  5:[
+    {id:"ec18",name:"Aker Digital AS",arr:144000,added:"2024-10-12",status:"Active",industry:"Tech",size:"Large",notes:""},
+    {id:"ec19",name:"Voss Energi AS",arr:60000,added:"2024-11-08",status:"Active",industry:"Energy",size:"Medium",notes:""},
+    {id:"ec20",name:"NorgesGruppen SMB",arr:84000,added:"2024-12-01",status:"Active",industry:"Retail",size:"Large",notes:""},
+    {id:"ec21",name:"Fredrikstad Fiskeri",arr:36000,added:"2025-01-14",status:"Active",industry:"Fishing",size:"Medium",notes:""},
+    {id:"ec22",name:"Norgeshus AS",arr:48000,added:"2025-02-03",status:"Active",industry:"Property",size:"Medium",notes:""},
+    {id:"ec23",name:"Sollia Consulting",arr:30000,added:"2025-02-22",status:"Pending",industry:"Consulting",size:"Small",notes:""},
+    {id:"ec24",name:"Bredband Norge AS",arr:96000,added:"2025-03-01",status:"Active",industry:"Telecom",size:"Large",notes:""},
+    {id:"ec25",name:"Capital Nordic AS",arr:120000,added:"2025-03-04",status:"Active",industry:"Finance",size:"Large",notes:""},
+  ],
+};
+
+const INIT_PARTNERS = [
+  {id:1,name:"Revisjon & Co AS",tier:"Gold",points:4820,leads:7,certified:true,revenue:2400000,joined:"Jan 2023",wins:5,ytdKickback:70200,contact:"Marte Holm",email:"marte@revisjon.no",phone:"+47 900 12345",courses:[1,2,4],region:"Oslo"},
+  {id:2,name:"Nordvik Regnskap AS",tier:"Silver",points:2340,leads:3,certified:false,revenue:980000,joined:"Mar 2023",wins:2,ytdKickback:7200,contact:"Erik Strand",email:"erik@nordvik.no",phone:"+47 911 23456",courses:[1],region:"Bergen"},
+  {id:3,name:"Bergens Økonomi AS",tier:"Silver",points:2890,leads:5,certified:true,revenue:1350000,joined:"Jun 2022",wins:3,ytdKickback:26400,contact:"Silje Bakke",email:"silje@bergens.no",phone:"+47 922 34567",courses:[1,2],region:"Bergen"},
+  {id:4,name:"Fjord Consulting AS",tier:"Bronze",points:890,leads:1,certified:false,revenue:310000,joined:"Nov 2023",wins:0,ytdKickback:1620,contact:"Lars Dahl",email:"lars@fjord.no",phone:"+47 933 45678",courses:[1],region:"Stavanger"},
+  {id:5,name:"Oslo Regnskapspartner",tier:"Gold",points:5210,leads:9,certified:true,revenue:3100000,joined:"Sep 2022",wins:7,ytdKickback:111240,contact:"Ingrid Moen",email:"ingrid@oslorp.no",phone:"+47 944 56789",courses:[1,2,3,4,5],region:"Oslo"},
+];
+
+const INIT_LEADS = [
+  {id:1,partnerId:1,company:"TechStart Norge AS",type:"New Client",status:"New",date:"2025-03-04",size:"Large",value:120000,notes:"Referred by CEO. Large SaaS company, 40 employees.",activity:[]},
+  {id:2,partnerId:5,company:"Fjordline Logistics",type:"Referral",status:"In Progress",date:"2025-03-01",size:"Medium",value:60000,notes:"Needs demo of payroll module.",activity:[{date:"2025-03-02",text:"Demo scheduled for Mar 10"}]},
+  {id:3,partnerId:3,company:"Artisan Bryggeriet",type:"New Client",status:"Qualified",date:"2025-02-28",size:"Small",value:18000,notes:"Small craft brewery, interested in invoicing.",activity:[]},
+  {id:4,partnerId:1,company:"Nordic SaaS Group",type:"Agency Friend",status:"New",date:"2025-03-05",size:"Large",value:96000,notes:"New agency, wants to explore Tripletex for their clients.",activity:[]},
+  {id:5,partnerId:2,company:"Haugesund Handel",type:"New Client",status:"Closed Won",date:"2025-02-20",size:"Small",value:18000,notes:"Successfully onboarded.",activity:[{date:"2025-02-22",text:"Contract signed"},{date:"2025-02-25",text:"Onboarding complete"}]},
+  {id:6,partnerId:3,company:"Vestland Shipping",type:"Referral",status:"Qualified",date:"2025-02-25",size:"Medium",value:48000,notes:"",activity:[]},
+  {id:7,partnerId:5,company:"Nordic Capital Fund",type:"New Client",status:"Closed Won",date:"2025-02-15",size:"Large",value:144000,notes:"Major win.",activity:[{date:"2025-02-18",text:"Contract signed"},{date:"2025-02-20",text:"Live on Tripletex"}]},
+];
+
+const INIT_CASES = [
+  {id:1,num:"C-00412",partnerId:1,title:"Client cannot access payroll module",priority:"High",status:"Open",created:"2025-03-05",cat:"Technical",description:"Client Norsk Byggservice AS cannot log into the payroll section after the 2025-03-04 update.",comments:[{author:"Marte Holm",date:"2025-03-05",text:"Reproduced the issue on my end. Submitting to Tripletex support."}]},
+  {id:2,num:"C-00389",partnerId:3,title:"Invoice export formatting issue",priority:"Medium",status:"In Progress",created:"2025-03-03",cat:"Feature",description:"Exported invoices show incorrect decimal separator (comma vs period) for international clients.",comments:[{author:"Silje Bakke",date:"2025-03-04",text:"Affects Bergen Maritime AS specifically."}]},
+  {id:3,num:"C-00371",partnerId:2,title:"New user onboarding question",priority:"Low",status:"Resolved",created:"2025-02-28",cat:"Onboarding",description:"Partner needed guidance on how to set up new user roles for a client.",comments:[{author:"Support",date:"2025-03-01",text:"Resolved via documentation link. Closing."}]},
+  {id:4,num:"C-00401",partnerId:5,title:"API rate limit exceeded",priority:"High",status:"In Progress",created:"2025-03-04",cat:"Technical",description:"Integration hitting 429 errors during bulk sync operations.",comments:[]},
+  {id:5,num:"C-00358",partnerId:1,title:"Bulk import CSV format",priority:"Medium",status:"Resolved",created:"2025-02-20",cat:"Feature",description:"Partner needed the correct CSV template for bulk client import.",comments:[]},
+];
+
+const COURSES = [
+  {id:1,title:"Tripletex Foundations",dur:"2h",pts:200,cert:false,desc:"Core platform overview, navigation, and key workflows."},
+  {id:2,title:"Advanced Bookkeeping Module",dur:"3h",pts:300,cert:true,desc:"Deep dive into bookkeeping, reconciliation, and year-end closing."},
+  {id:3,title:"Partner Sales Playbook",dur:"1.5h",pts:250,cert:false,desc:"How to position Tripletex, handle objections, and close deals."},
+  {id:4,title:"API & Integrations",dur:"4h",pts:400,cert:true,desc:"REST API usage, webhooks, and building integrations with Tripletex."},
+  {id:5,title:"Client Onboarding Best Practices",dur:"1h",pts:150,cert:false,desc:"Step-by-step guide to getting new clients live quickly."},
+];
+
+const ACTIVITY_LOG_INIT = [
+  {id:1,type:"lead",text:'New lead submitted: "TechStart Norge AS"',partner:1,date:"2025-03-04",icon:"📋"},
+  {id:2,type:"customer",text:'New client onboarded: "Arctic Logistics Group"',partner:1,date:"2025-03-04",icon:"👥"},
+  {id:3,type:"lead",text:'Lead closed: "Nordic Capital Fund"',partner:5,date:"2025-02-18",icon:"🎯"},
+  {id:4,type:"tier",text:'Partner upgraded to Gold tier',partner:1,date:"2025-02-10",icon:"🥇"},
+  {id:5,type:"course",text:'Completed: "Advanced Bookkeeping Module"',partner:3,date:"2025-02-05",icon:"🎓"},
+];
+
+/* ═══════════════════ SHARED STATE (useReducer) ═══════════════════ */
+const AppCtx = createContext(null);
+function reducer(state, action) {
+  switch(action.type) {
+    case "ADD_LEAD": {
+      const newLead = {...action.payload, id: Date.now(), date: new Date().toISOString().slice(0,10), status:"New", wins:0, activity:[]};
+      const p = state.partners.find(p=>p.id===action.payload.partnerId);
+      const pts = p ? TIER_CONFIG[p.tier].leadBonus : 50;
+      return {
+        ...state,
+        leads: [newLead, ...state.leads],
+        partners: state.partners.map(p=>p.id===action.payload.partnerId ? {...p, leads:p.leads+1, points:p.points+50} : p),
+        activityLog: [{id:Date.now(),type:"lead",text:`New lead: "${action.payload.company}"`,partner:action.payload.partnerId,date:new Date().toISOString().slice(0,10),icon:"📋"},...state.activityLog],
+      };
+    }
+    case "UPDATE_LEAD_STATUS": {
+      const lead = state.leads.find(l=>l.id===action.id);
+      const isWon = action.status==="Closed Won";
+      const partner = state.partners.find(p=>p.id===lead.partnerId);
+      const bonus = isWon && partner ? TIER_CONFIG[partner.tier].leadBonus : 0;
+      return {
+        ...state,
+        leads: state.leads.map(l=>l.id===action.id ? {...l, status:action.status, activity:[...l.activity, {date:new Date().toISOString().slice(0,10), text:`Status changed to "${action.status}"`}]} : l),
+        partners: state.partners.map(p=>p.id===lead.partnerId ? {...p, wins: isWon ? p.wins+1 : p.wins, points: p.points+bonus, ytdKickback: isWon ? p.ytdKickback+(lead.value*(TIER_CONFIG[p.tier].kickback/100)) : p.ytdKickback} : p),
+        activityLog: [{id:Date.now(),type:"lead",text:`Lead "${lead.company}" → ${action.status}`,partner:lead.partnerId,date:new Date().toISOString().slice(0,10),icon:isWon?"🎯":"📋"},...state.activityLog],
+      };
+    }
+    case "ADD_LEAD_COMMENT": {
+      return { ...state, leads: state.leads.map(l=>l.id===action.id ? {...l, activity:[...l.activity,{date:new Date().toISOString().slice(0,10),text:action.text}]} : l) };
+    }
+    case "ADD_CUSTOMER": {
+      const p = state.partners.find(p=>p.id===action.partnerId);
+      const kb = p ? Math.round(action.customer.arr * (TIER_CONFIG[p.tier].kickback/100)) : 0;
+      const newC = {...action.customer, id:`ec_${Date.now()}`, status:"Pending", kickback:kb};
+      const ptsBonus = 100;
+      return {
+        ...state,
+        customers: {...state.customers, [action.partnerId]: [...(state.customers[action.partnerId]||[]), newC]},
+        partners: state.partners.map(p=>p.id===action.partnerId ? {...p, points:p.points+ptsBonus} : p),
+        activityLog: [{id:Date.now(),type:"customer",text:`New customer added: "${action.customer.name}"`,partner:action.partnerId,date:new Date().toISOString().slice(0,10),icon:"👥"},...state.activityLog],
+      };
+    }
+    case "UPDATE_CUSTOMER_STATUS": {
+      return { ...state, customers: {...state.customers, [action.partnerId]: state.customers[action.partnerId].map(c=>c.id===action.id ? {...c, status:action.status} : c)} };
+    }
+    case "COMPLETE_COURSE": {
+      const course = COURSES.find(c=>c.id===action.courseId);
+      const p = state.partners.find(p=>p.id===action.partnerId);
+      if (!p || p.courses.includes(action.courseId)) return state;
+      const certBonus = course.cert ? TIER_CONFIG[p.tier].certBonus : 0;
+      const newPoints = p.points + course.pts + certBonus;
+      const newCourses = [...p.courses, action.courseId];
+      // Check tier upgrade
+      let newTier = p.tier;
+      if (newPoints >= TIER_CONFIG.Gold.pointsMin) newTier = "Gold";
+      else if (newPoints >= TIER_CONFIG.Silver.pointsMin) newTier = "Silver";
+      const upgraded = newTier !== p.tier;
+      return {
+        ...state,
+        partners: state.partners.map(p=>p.id===action.partnerId ? {...p, courses:newCourses, points:newPoints, tier:newTier, certified: p.certified || (course.cert)} : p),
+        activityLog: [
+          ...(upgraded ? [{id:Date.now()+1,type:"tier",text:`Upgraded to ${newTier} tier!`,partner:action.partnerId,date:new Date().toISOString().slice(0,10),icon:"🥇"}] : []),
+          {id:Date.now(),type:"course",text:`Completed: "${course.title}"`,partner:action.partnerId,date:new Date().toISOString().slice(0,10),icon:"🎓"},
+          ...state.activityLog
+        ],
+      };
+    }
+    case "UPDATE_CASE_STATUS": {
+      return { ...state, cases: state.cases.map(c=>c.id===action.id ? {...c, status:action.status} : c) };
+    }
+    case "ADD_CASE": {
+      const newCase = {...action.payload, id:Date.now(), num:`C-${String(400+state.cases.length+1).padStart(5,"0")}`, status:"Open", comments:[]};
+      return { ...state, cases: [newCase,...state.cases] };
+    }
+    case "ADD_CASE_COMMENT": {
+      return { ...state, cases: state.cases.map(c=>c.id===action.id ? {...c, comments:[...c.comments,{author:action.author,date:new Date().toISOString().slice(0,10),text:action.text}]} : c) };
+    }
+    default: return state;
+  }
+}
+
+/* ═══════════════════ ATOM COMPONENTS ═══════════════════ */
+const fmtNOK = n => n>=1e6?`${(n/1e6).toFixed(2)}M NOK`:n>=1000?`${(n/1000).toFixed(0)}k NOK`:`${n} NOK`;
+const fmtK = n => n>=1e6?`${(n/1e6).toFixed(1)}M`:n>=1000?`${(n/1000).toFixed(0)}k`:String(n);
+
+const TierBadge = ({tier,lg})=>{
+  const cfg=TIER_CONFIG[tier];
+  return <span style={{background:cfg.bg,color:cfg.color,border:`1px solid ${cfg.border}`,borderRadius:4,padding:lg?"4px 12px":"2px 8px",fontSize:lg?13:11,fontWeight:700,fontFamily:"monospace",letterSpacing:.5}}>{tier==="Gold"?"🥇":tier==="Silver"?"🥈":"🥉"} {tier.toUpperCase()}</span>;
+};
+
+const Pill=({s})=>{
+  const m={"New":{bg:C.blueLight,c:C.blue},"In Progress":{bg:C.orangeLight,c:C.orange},"Qualified":{bg:"#EEF6EE",c:"#2E7D32"},"Closed Won":{bg:C.greenLight,c:C.greenDark},"Open":{bg:C.redLight,c:C.red},"Resolved":{bg:C.greenLight,c:C.greenDark},"Pending":{bg:C.goldLight,c:C.gold},"Active":{bg:C.greenLight,c:C.greenDark}}[s]||{bg:C.pageGrey,c:C.textMid};
+  return <span style={{background:m.bg,color:m.c,borderRadius:99,padding:"2px 10px",fontSize:11,fontWeight:700,fontFamily:"'DM Sans',sans-serif"}}>{s}</span>;
+};
+
+const Bar=({val,max,thin,gold})=>{
+  const pct=Math.min(100,Math.round((val/max)*100));
+  const col=gold?C.gold:pct>=80?C.green:pct>=50?"#38BCA7":pct>=25?C.gold:C.red;
+  return <div style={{background:C.cardBorder,borderRadius:99,height:thin?5:8,overflow:"hidden",flex:1}}><div style={{width:`${pct}%`,height:"100%",borderRadius:99,background:col,transition:"width .9s cubic-bezier(.4,0,.2,1)"}}/></div>;
+};
+
+const Card=({children,style={},noPad,onClick,hover})=>(
+  <div onClick={onClick} style={{background:C.white,border:`1px solid ${C.cardBorder}`,borderRadius:8,boxShadow:"0 1px 4px rgba(22,33,58,.06)",padding:noPad?0:20,overflow:"hidden",cursor:hover?"pointer":"default",transition:"box-shadow .15s,transform .15s",...style}}
+    onMouseEnter={e=>{if(hover){e.currentTarget.style.boxShadow="0 4px 16px rgba(22,33,58,.13)";e.currentTarget.style.transform="translateY(-1px)";}}}
+    onMouseLeave={e=>{if(hover){e.currentTarget.style.boxShadow="0 1px 4px rgba(22,33,58,.06)";e.currentTarget.style.transform="none";}}}>
+    {children}
+  </div>
+);
+
+const Metric=({label,value,sub,icon,accent,onClick,active})=>(
+  <div onClick={onClick} style={{background:active?C.greenLight:C.white,border:`1.5px solid ${active?C.green:C.cardBorder}`,borderRadius:8,padding:"15px 16px",flex:1,minWidth:110,cursor:onClick?"pointer":"default",transition:"all .15s",boxShadow:"0 1px 4px rgba(22,33,58,.06)"}}
+    onMouseEnter={e=>{if(onClick){e.currentTarget.style.borderColor=C.green;e.currentTarget.style.boxShadow="0 4px 12px rgba(0,131,91,.15)";}}}
+    onMouseLeave={e=>{if(onClick){e.currentTarget.style.borderColor=active?C.green:C.cardBorder;e.currentTarget.style.boxShadow="0 1px 4px rgba(22,33,58,.06)";}}}>
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8}}>
+      <div style={{minWidth:0}}>
+        <div style={{fontSize:10,fontWeight:700,color:C.textLight,textTransform:"uppercase",letterSpacing:.8,fontFamily:"'DM Sans',sans-serif",marginBottom:4,whiteSpace:"nowrap",display:"flex",alignItems:"center",gap:3}}>
+          {label}{onClick&&<span style={{fontSize:9,color:C.green}}>↗</span>}
+        </div>
+        <div style={{fontSize:22,fontWeight:800,color:accent?C.green:C.text,fontFamily:"'Sora',sans-serif",lineHeight:1}}>{value}</div>
+        {sub&&<div style={{fontSize:10,color:C.textMid,marginTop:3,fontFamily:"'DM Sans',sans-serif"}}>{sub}</div>}
+      </div>
+      <div style={{width:34,height:34,borderRadius:8,flexShrink:0,background:accent?C.greenLight:C.pageGrey,display:"flex",alignItems:"center",justifyContent:"center",fontSize:16}}>{icon}</div>
+    </div>
+  </div>
+);
+
+/* Modal */
+const Modal=({title,onClose,children,wide,subtitle})=>(
+  <div style={{position:"fixed",inset:0,background:"rgba(22,33,58,.6)",zIndex:1000,display:"flex",alignItems:"flex-start",justifyContent:"center",padding:"32px 20px",backdropFilter:"blur(3px)"}} onClick={e=>{if(e.target===e.currentTarget)onClose();}}>
+    <div style={{background:C.white,borderRadius:12,width:"100%",maxWidth:wide?960:660,maxHeight:"85vh",overflow:"auto",boxShadow:"0 24px 64px rgba(22,33,58,.35)"}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"16px 24px",borderBottom:`1px solid ${C.cardBorder}`,position:"sticky",top:0,background:C.white,zIndex:1}}>
+        <div>
+          <h2 style={{margin:0,fontSize:16,fontWeight:800,color:C.text,fontFamily:"'Sora',sans-serif"}}>{title}</h2>
+          {subtitle&&<div style={{fontSize:12,color:C.textMid,marginTop:2,fontFamily:"'DM Sans',sans-serif"}}>{subtitle}</div>}
+        </div>
+        <button onClick={onClose} style={{background:C.pageGrey,border:"none",borderRadius:6,width:30,height:30,cursor:"pointer",fontSize:16,color:C.textMid,display:"flex",alignItems:"center",justifyContent:"center"}}>✕</button>
+      </div>
+      <div style={{padding:24}}>{children}</div>
+    </div>
+  </div>
+);
+
+/* Toast notification */
+const Toast=({msg,onDone})=>{
+  useEffect(()=>{const t=setTimeout(onDone,2800);return()=>clearTimeout(t);},[]);
+  return <div style={{position:"fixed",bottom:24,right:24,zIndex:2000,background:C.green,color:"#fff",borderRadius:10,padding:"12px 20px",boxShadow:"0 8px 24px rgba(0,131,91,.35)",fontSize:13,fontWeight:600,fontFamily:"'DM Sans',sans-serif",display:"flex",alignItems:"center",gap:10,animation:"fadeIn .2s ease"}}>
+    <span>✓</span>{msg}
+  </div>;
+};
+
+const TH=({ch,right})=><th style={{padding:"9px 12px",textAlign:right?"right":"left",fontSize:10,fontWeight:700,color:C.textLight,textTransform:"uppercase",letterSpacing:.7,fontFamily:"'DM Sans',sans-serif",background:C.pageGrey,borderBottom:`1px solid ${C.cardBorder}`,whiteSpace:"nowrap"}}>{ch}</th>;
+const TD=({children,bold,mono,right,green,small})=><td style={{padding:"10px 12px",fontSize:small?11:13,textAlign:right?"right":"left",color:green?C.green:bold?C.text:C.textMid,fontFamily:mono?"'Courier New',monospace":"'DM Sans',sans-serif",borderBottom:`1px solid ${C.cardBorder}`,fontWeight:bold?600:400}}>{children}</td>;
+const BtnP=({ch,onClick,small,full,danger,disabled})=><button disabled={disabled} onClick={onClick} style={{background:disabled?"#ccc":danger?C.red:C.green,color:"#fff",border:"none",borderRadius:6,padding:small?"6px 14px":"9px 20px",fontSize:small?12:13,fontWeight:700,cursor:disabled?"not-allowed":"pointer",fontFamily:"'DM Sans',sans-serif",whiteSpace:"nowrap",width:full?"100%":"auto",opacity:disabled?.6:1}}>{ch}</button>;
+const BtnG=({ch,onClick,small,active})=><button onClick={onClick} style={{background:active?C.green:"transparent",color:active?"#fff":C.green,border:`1.5px solid ${C.green}`,borderRadius:6,padding:small?"5px 12px":"8px 16px",fontSize:small?12:13,fontWeight:700,cursor:"pointer",fontFamily:"'DM Sans',sans-serif",whiteSpace:"nowrap"}}>{ch}</button>;
+const FLabel=({t})=><div style={{fontSize:11,fontWeight:700,color:C.textMid,textTransform:"uppercase",letterSpacing:.6,marginBottom:5,fontFamily:"'DM Sans',sans-serif"}}>{t}</div>;
+const FInput=({v,onChange,ph,type})=><input type={type||"text"} value={v} onChange={onChange} placeholder={ph} style={{width:"100%",border:`1px solid ${C.cardBorder}`,borderRadius:6,padding:"8px 12px",fontSize:13,fontFamily:"'DM Sans',sans-serif",color:C.text,background:C.white,outline:"none",boxSizing:"border-box"}}/>;
+const FSelect=({v,onChange,opts})=><select value={v} onChange={onChange} style={{width:"100%",border:`1px solid ${C.cardBorder}`,borderRadius:6,padding:"8px 12px",fontSize:13,fontFamily:"'DM Sans',sans-serif",color:C.text,background:C.white,cursor:"pointer"}}>{opts.map(o=><option key={o}>{o}</option>)}</select>;
+const FTextarea=({v,onChange,ph})=><textarea value={v} onChange={onChange} placeholder={ph} rows={3} style={{width:"100%",border:`1px solid ${C.cardBorder}`,borderRadius:6,padding:"8px 12px",fontSize:13,fontFamily:"'DM Sans',sans-serif",color:C.text,background:C.white,outline:"none",resize:"vertical",boxSizing:"border-box"}}/>;
+
+const SectionDivider=({title,action})=><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12,paddingBottom:10,borderBottom:`1px solid ${C.cardBorder}`}}><h3 style={{margin:0,fontSize:14,fontWeight:700,color:C.text,fontFamily:"'Sora',sans-serif"}}>{title}</h3>{action}</div>;
+
+/* ═══════════════════ TIER PROGRESS WIDGET ═══════════════════ */
+const TierProgress=({partner,onCompare})=>{
+  const cfg=TIER_CONFIG[partner.tier];
+  const next=NEXT_TIER[partner.tier];
+  const nextCfg=next?TIER_CONFIG[next]:null;
+  const pct=next?Math.min(100,Math.round(((partner.points-cfg.pointsMin)/(nextCfg.pointsMin-cfg.pointsMin))*100)):100;
+  const ptsNeeded=next?nextCfg.pointsMin-partner.points:0;
+  return (
+    <div style={{background:`linear-gradient(135deg,${C.greenDeep} 0%,${C.green} 100%)`,borderRadius:10,padding:22,color:"#fff",position:"relative",overflow:"hidden"}}>
+      <div style={{position:"absolute",right:-8,top:-8,fontSize:100,opacity:.05,pointerEvents:"none"}}>✳</div>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:14}}>
+        <div>
+          <div style={{fontSize:10,fontWeight:700,textTransform:"uppercase",letterSpacing:1,color:"rgba(255,255,255,.55)",fontFamily:"'DM Sans',sans-serif",marginBottom:3}}>Partner Points</div>
+          <div style={{fontSize:44,fontWeight:900,fontFamily:"'Sora',sans-serif",lineHeight:1}}>{partner.points.toLocaleString()}</div>
+        </div>
+        <TierBadge tier={partner.tier} lg/>
+      </div>
+      <div style={{marginBottom:14}}>
+        <div style={{display:"flex",justifyContent:"space-between",marginBottom:5}}>
+          <span style={{fontSize:11,color:"rgba(255,255,255,.65)",fontFamily:"'DM Sans',sans-serif"}}>{next?`Progress to ${next}`:"🎉 Maximum tier"}</span>
+          <span style={{fontSize:12,fontWeight:800,color:C.gold,fontFamily:"'Sora',sans-serif"}}>{pct}%</span>
+        </div>
+        <div style={{background:"rgba(255,255,255,.2)",borderRadius:99,height:9,overflow:"hidden"}}>
+          <div style={{width:`${pct}%`,height:"100%",background:C.gold,borderRadius:99,transition:"width 1.2s ease",boxShadow:"0 0 8px rgba(232,162,0,.5)"}}/>
+        </div>
+        {next&&<div style={{display:"flex",justifyContent:"space-between",marginTop:5}}>
+          <span style={{fontSize:10,color:"rgba(255,255,255,.4)",fontFamily:"'DM Sans',sans-serif"}}>{cfg.pointsMin.toLocaleString()} pts</span>
+          <span style={{fontSize:10,color:C.gold,fontWeight:700,fontFamily:"'DM Sans',sans-serif"}}>{ptsNeeded.toLocaleString()} pts to {next} →</span>
+        </div>}
+      </div>
+      <div style={{display:"flex",gap:5}}>
+        {TIERS.map(t=>{
+          const tc=TIER_CONFIG[t];
+          const isCur=t===partner.tier;
+          const isPast=tc.pointsMin<=partner.points&&!isCur;
+          return <div key={t} style={{flex:1,borderRadius:6,padding:"7px 8px",background:isCur?"rgba(255,255,255,.18)":isPast?"rgba(255,255,255,.06)":"rgba(255,255,255,.02)",border:`1px solid ${isCur?"rgba(255,255,255,.35)":"rgba(255,255,255,.08)"}`,opacity:isPast||isCur?1:.45}}>
+            <div style={{fontSize:10,fontWeight:700,color:"#fff",fontFamily:"'Sora',sans-serif"}}>{t==="Gold"?"🥇":t==="Silver"?"🥈":"🥉"} {t}</div>
+            <div style={{fontSize:9,color:"rgba(255,255,255,.55)",fontFamily:"'DM Sans',sans-serif"}}>{tc.kickback}% kickback</div>
+          </div>;
+        })}
+      </div>
+      {onCompare&&<button onClick={onCompare} style={{marginTop:12,background:"rgba(255,255,255,.15)",color:"#fff",border:"1px solid rgba(255,255,255,.25)",borderRadius:6,padding:"6px 14px",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"'DM Sans',sans-serif",width:"100%"}}>Compare all tiers →</button>}
+    </div>
+  );
+};
+
+/* ═══════════════════ CUSTOMER DETAIL MODAL ═══════════════════ */
+const CustomerDetailModal=({customer,partner,onClose,onStatusChange})=>{
+  const kickback=Math.round(customer.arr*(TIER_CONFIG[partner.tier].kickback/100));
+  return (
+    <Modal title={customer.name} subtitle={`${customer.industry} · ${customer.size}`} onClose={onClose}>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:18}}>
+        {[{l:"ARR",v:`${customer.arr.toLocaleString()} NOK`},{l:"Kickback (${TIER_CONFIG[partner.tier].kickback}%)",v:`${kickback.toLocaleString()} NOK`},{l:"Industry",v:customer.industry},{l:"Size",v:customer.size},{l:"Added",v:customer.added},{l:"Status",v:<Pill s={customer.status}/>}].map((r,i)=>(
+          <div key={i} style={{background:C.pageGrey,borderRadius:8,padding:"10px 14px"}}>
+            <div style={{fontSize:10,color:C.textLight,textTransform:"uppercase",letterSpacing:.6,fontFamily:"'DM Sans',sans-serif",marginBottom:3}}>{r.l}</div>
+            <div style={{fontSize:14,fontWeight:700,color:C.text,fontFamily:"'Sora',sans-serif"}}>{r.v}</div>
+          </div>
+        ))}
+      </div>
+      {customer.notes&&<div style={{background:C.blueLight,borderRadius:8,padding:"10px 14px",marginBottom:14,border:`1px solid ${C.blue}20`}}>
+        <div style={{fontSize:11,fontWeight:700,color:C.blue,fontFamily:"'DM Sans',sans-serif",marginBottom:2}}>📝 Notes</div>
+        <div style={{fontSize:13,color:C.text,fontFamily:"'DM Sans',sans-serif"}}>{customer.notes}</div>
+      </div>}
+      <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+        {customer.status==="Pending"&&<BtnP ch="✓ Mark Active" onClick={()=>{onStatusChange(customer.id,"Active");onClose();}} small/>}
+        {customer.status==="Active"&&<BtnP ch="Pause Account" onClick={()=>{onStatusChange(customer.id,"Pending");onClose();}} small danger/>}
+        <BtnG ch="View Invoices" small onClick={onClose}/>
+        <BtnG ch="View in Tripletex" small onClick={onClose}/>
+      </div>
+    </Modal>
+  );
+};
+
+/* ═══════════════════ CUSTOMERS MODAL (full list) ═══════════════════ */
+const CustomersModal=({partner,onClose})=>{
+  const {state,dispatch}=useContext(AppCtx);
+  const [filter,setFilter]=useState("All");
+  const [selCustomer,setSelCustomer]=useState(null);
+  const [addOpen,setAddOpen]=useState(false);
+  const [form,setForm]=useState({name:"",arr:"",industry:"Tech",size:"Medium",notes:""});
+  const set=k=>e=>setForm(f=>({...f,[k]:e.target.value}));
+  const {toast,setToast}=useContext(AppCtx);
+  const cfg=TIER_CONFIG[partner.tier];
+  const customers=state.customers[partner.id]||[];
+  const filtered=filter==="All"?customers:customers.filter(c=>c.status===filter);
+  const totalARR=filtered.reduce((s,c)=>s+c.arr,0);
+  const totalKB=filtered.reduce((s,c)=>s+Math.round(c.arr*(cfg.kickback/100)),0);
+
+  return (<>
+    <Modal title={`${partner.name} — Clients (${customers.length})`} subtitle={`${cfg.kickback}% kickback · ${fmtNOK(totalARR)} total ARR`} onClose={onClose} wide>
+      <div style={{display:"flex",gap:8,marginBottom:14,flexWrap:"wrap",alignItems:"center"}}>
+        {["All","Active","Pending"].map(f=><button key={f} onClick={()=>setFilter(f)} style={{background:filter===f?C.green:C.pageGrey,color:filter===f?"#fff":C.textMid,border:"none",borderRadius:6,padding:"5px 14px",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}>
+          {f} ({f==="All"?customers.length:customers.filter(c=>c.status===f).length})
+        </button>)}
+        <div style={{marginLeft:"auto"}}><BtnP ch="+ Add Client" onClick={()=>setAddOpen(true)} small/></div>
+      </div>
+      <div style={{display:"flex",gap:10,marginBottom:14}}>
+        {[{l:"Total ARR",v:fmtNOK(totalARR),a:true},{l:`Kickback @ ${cfg.kickback}%`,v:fmtNOK(totalKB),a:true},{l:"Active",v:filtered.filter(c=>c.status==="Active").length,a:false},{l:"Pending",v:filtered.filter(c=>c.status==="Pending").length,a:false}].map(s=>(
+          <div key={s.l} style={{flex:1,background:s.a?C.greenLight:C.pageGrey,borderRadius:8,padding:"10px 12px",border:`1px solid ${s.a?C.greenMid:C.cardBorder}`}}>
+            <div style={{fontSize:9,color:s.a?C.greenDark:C.textLight,textTransform:"uppercase",letterSpacing:.6,fontFamily:"'DM Sans',sans-serif",marginBottom:2}}>{s.l}</div>
+            <div style={{fontSize:17,fontWeight:800,color:s.a?C.green:C.text,fontFamily:"'Sora',sans-serif"}}>{s.v}</div>
+          </div>
+        ))}
+      </div>
+      <div style={{overflowX:"auto"}}>
+        <table style={{width:"100%",borderCollapse:"collapse"}}>
+          <thead><tr><TH ch="Company"/><TH ch="Industry"/><TH ch="Size"/><TH ch="ARR (NOK)" right/><TH ch={`Kickback (${cfg.kickback}%)`} right/><TH ch="Added"/><TH ch="Status"/><TH ch=""/></tr></thead>
+          <tbody>{filtered.map(c=>(
+            <tr key={c.id} onMouseEnter={e=>e.currentTarget.style.background=C.rowHover} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+              <td style={{padding:"10px 12px",borderBottom:`1px solid ${C.cardBorder}`}}><span style={{fontWeight:600,fontSize:13,color:C.text,fontFamily:"'DM Sans',sans-serif",cursor:"pointer",color:C.blue}} onClick={()=>setSelCustomer(c)}>{c.name}</span></td>
+              <TD>{c.industry}</TD><TD>{c.size}</TD>
+              <td style={{padding:"10px 12px",textAlign:"right",borderBottom:`1px solid ${C.cardBorder}`,fontSize:13,fontWeight:600,color:C.text,fontFamily:"'Sora',sans-serif"}}>{c.arr.toLocaleString()}</td>
+              <td style={{padding:"10px 12px",textAlign:"right",borderBottom:`1px solid ${C.cardBorder}`,fontSize:13,fontWeight:700,color:C.green,fontFamily:"'Sora',sans-serif"}}>{Math.round(c.arr*(cfg.kickback/100)).toLocaleString()}</td>
+              <TD>{c.added}</TD><TD><Pill s={c.status}/></TD>
+              <td style={{padding:"10px 12px",borderBottom:`1px solid ${C.cardBorder}`}}><button onClick={()=>setSelCustomer(c)} style={{background:C.blueLight,color:C.blue,border:"none",borderRadius:6,padding:"4px 10px",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}>View</button></td>
+            </tr>
+          ))}</tbody>
+          <tfoot><tr style={{background:C.greenLight}}>
+            <td colSpan={3} style={{padding:"10px 12px",fontSize:12,fontWeight:700,color:C.greenDark,fontFamily:"'DM Sans',sans-serif"}}>TOTAL ({filtered.length})</td>
+            <td style={{padding:"10px 12px",textAlign:"right",fontSize:13,fontWeight:800,color:C.text,fontFamily:"'Sora',sans-serif"}}>{totalARR.toLocaleString()}</td>
+            <td style={{padding:"10px 12px",textAlign:"right",fontSize:13,fontWeight:800,color:C.green,fontFamily:"'Sora',sans-serif"}}>{totalKB.toLocaleString()}</td>
+            <td colSpan={3}/>
+          </tr></tfoot>
+        </table>
+      </div>
+      {addOpen&&<div style={{marginTop:20,background:C.pageGrey,borderRadius:10,padding:18,border:`1px solid ${C.cardBorder}`}}>
+        <SectionDivider title="Add New Client" action={<button onClick={()=>setAddOpen(false)} style={{background:"none",border:"none",cursor:"pointer",color:C.textMid,fontSize:16}}>✕</button>}/>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12}}>
+          <div><FLabel t="Company Name"/><FInput v={form.name} onChange={set("name")} ph="Company name..."/></div>
+          <div><FLabel t="Annual Revenue (NOK)"/><FInput v={form.arr} onChange={set("arr")} ph="e.g. 48000" type="number"/></div>
+          <div><FLabel t="Industry"/><FSelect v={form.industry} onChange={set("industry")} opts={["Tech","Retail","Maritime","Fishing","Property","Legal","HR","Finance","Logistics","Energy","Telecom","F&B","Trades","Tourism","Consulting"]}/></div>
+          <div><FLabel t="Size"/><FSelect v={form.size} onChange={set("size")} opts={["Small","Medium","Large"]}/></div>
+          <div style={{gridColumn:"1/-1"}}><FLabel t="Notes"/><FInput v={form.notes} onChange={set("notes")} ph="Optional notes..."/></div>
+          <div style={{gridColumn:"1/-1"}}>
+            <BtnP ch={`Add Client (+100 pts · kickback: ${fmtNOK(Math.round((Number(form.arr)||0)*(cfg.kickback/100)))})`} full onClick={()=>{
+              if(!form.name||!form.arr)return;
+              dispatch({type:"ADD_CUSTOMER",partnerId:partner.id,customer:{name:form.name,arr:Number(form.arr),added:new Date().toISOString().slice(0,10),industry:form.industry,size:form.size,notes:form.notes}});
+              setForm({name:"",arr:"",industry:"Tech",size:"Medium",notes:""});
+              setAddOpen(false);
+            }}/>
+          </div>
+        </div>
+      </div>}
+    </Modal>
+    {selCustomer&&<CustomerDetailModal customer={selCustomer} partner={partner} onClose={()=>setSelCustomer(null)} onStatusChange={(id,status)=>{dispatch({type:"UPDATE_CUSTOMER_STATUS",partnerId:partner.id,id,status});}}/>}
+  </>);
+};
+
+/* ═══════════════════ LEAD DETAIL MODAL ═══════════════════ */
+const LeadDetailModal=({lead,partner,onClose})=>{
+  const {dispatch}=useContext(AppCtx);
+  const [comment,setComment]=useState("");
+  const cfg=TIER_CONFIG[partner.tier];
+  const potentialKB=Math.round(lead.value*(cfg.kickback/100));
+  const statuses=["New","In Progress","Qualified","Closed Won"];
+  return (
+    <Modal title={lead.company} subtitle={`${lead.type} · ${lead.size} · Submitted ${lead.date}`} onClose={onClose}>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:16}}>
+        {[{l:"Lead Value",v:`${lead.value.toLocaleString()} NOK`},{l:`Potential Kickback (${cfg.kickback}%)`,v:`${potentialKB.toLocaleString()} NOK`},{l:"Type",v:lead.type},{l:"Size",v:lead.size},{l:"Status",v:<Pill s={lead.status}/>},{l:"Date",v:lead.date}].map((r,i)=>(
+          <div key={i} style={{background:C.pageGrey,borderRadius:8,padding:"10px 14px"}}>
+            <div style={{fontSize:10,color:C.textLight,textTransform:"uppercase",letterSpacing:.6,fontFamily:"'DM Sans',sans-serif",marginBottom:2}}>{r.l}</div>
+            <div style={{fontSize:13,fontWeight:700,color:C.text,fontFamily:"'Sora',sans-serif"}}>{r.v}</div>
+          </div>
+        ))}
+      </div>
+      {lead.notes&&<div style={{background:C.blueLight,borderRadius:8,padding:"10px 14px",marginBottom:14,border:`1px solid ${C.blue}20`}}>
+        <div style={{fontSize:11,fontWeight:700,color:C.blue,fontFamily:"'DM Sans',sans-serif",marginBottom:2}}>📝 Notes</div>
+        <div style={{fontSize:13,color:C.text,fontFamily:"'DM Sans',sans-serif"}}>{lead.notes}</div>
+      </div>}
+      {/* Status updater */}
+      <SectionDivider title="Update Status"/>
+      <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:16}}>
+        {statuses.map(s=><BtnG key={s} ch={s} small active={lead.status===s} onClick={()=>{dispatch({type:"UPDATE_LEAD_STATUS",id:lead.id,status:s});onClose();}}/>)}
+      </div>
+      {/* Activity timeline */}
+      {lead.activity.length>0&&<>
+        <SectionDivider title="Activity Timeline"/>
+        <div style={{marginBottom:14}}>
+          {lead.activity.map((a,i)=>(
+            <div key={i} style={{display:"flex",gap:10,padding:"8px 0",borderBottom:`1px solid ${C.cardBorder}`}}>
+              <div style={{width:6,height:6,borderRadius:99,background:C.green,flexShrink:0,marginTop:5}}/>
+              <div>
+                <div style={{fontSize:12,color:C.text,fontFamily:"'DM Sans',sans-serif"}}>{a.text}</div>
+                <div style={{fontSize:10,color:C.textLight,marginTop:1,fontFamily:"'DM Sans',sans-serif"}}>{a.date}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </>}
+      <SectionDivider title="Add Note"/>
+      <div style={{display:"flex",gap:8}}>
+        <div style={{flex:1}}><FInput v={comment} onChange={e=>setComment(e.target.value)} ph="Add activity note..."/></div>
+        <BtnP ch="Add" small onClick={()=>{if(comment.trim()){dispatch({type:"ADD_LEAD_COMMENT",id:lead.id,text:comment});setComment("");}}}/>
+      </div>
+    </Modal>
+  );
+};
+
+/* ═══════════════════ CASE DETAIL MODAL ═══════════════════ */
+const CaseDetailModal=({cas,partnerName,onClose,isAdmin})=>{
+  const {dispatch}=useContext(AppCtx);
+  const [comment,setComment]=useState("");
+  const statuses=["Open","In Progress","Resolved"];
+  return (
+    <Modal title={`${cas.num}: ${cas.title}`} subtitle={`${cas.cat} · ${partnerName}`} onClose={onClose}>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:16}}>
+        {[{l:"Case #",v:cas.num},{l:"Category",v:cas.cat},{l:"Priority",v:cas.priority},{l:"Status",v:<Pill s={cas.status}/>},{l:"Created",v:cas.created},{l:"Partner",v:partnerName}].map((r,i)=>(
+          <div key={i} style={{background:C.pageGrey,borderRadius:8,padding:"10px 14px"}}>
+            <div style={{fontSize:10,color:C.textLight,textTransform:"uppercase",letterSpacing:.6,fontFamily:"'DM Sans',sans-serif",marginBottom:2}}>{r.l}</div>
+            <div style={{fontSize:13,fontWeight:700,color:C.text,fontFamily:"'Sora',sans-serif"}}>{r.v}</div>
+          </div>
+        ))}
+      </div>
+      <div style={{background:C.pageGrey,borderRadius:8,padding:"12px 14px",marginBottom:16}}>
+        <div style={{fontSize:11,fontWeight:700,color:C.textMid,fontFamily:"'DM Sans',sans-serif",marginBottom:3}}>DESCRIPTION</div>
+        <div style={{fontSize:13,color:C.text,fontFamily:"'DM Sans',sans-serif"}}>{cas.description}</div>
+      </div>
+      <SectionDivider title="Update Status"/>
+      <div style={{display:"flex",gap:8,marginBottom:16}}>
+        {statuses.map(s=><BtnG key={s} ch={s} small active={cas.status===s} onClick={()=>{dispatch({type:"UPDATE_CASE_STATUS",id:cas.id,status:s});onClose();}}/>)}
+      </div>
+      {cas.comments.length>0&&<>
+        <SectionDivider title="Comments"/>
+        <div style={{marginBottom:14}}>
+          {cas.comments.map((c,i)=>(
+            <div key={i} style={{background:C.pageGrey,borderRadius:8,padding:"10px 12px",marginBottom:8}}>
+              <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
+                <span style={{fontSize:11,fontWeight:700,color:C.green,fontFamily:"'DM Sans',sans-serif"}}>{c.author}</span>
+                <span style={{fontSize:10,color:C.textLight,fontFamily:"'DM Sans',sans-serif"}}>{c.date}</span>
+              </div>
+              <div style={{fontSize:13,color:C.text,fontFamily:"'DM Sans',sans-serif"}}>{c.text}</div>
+            </div>
+          ))}
+        </div>
+      </>}
+      <SectionDivider title="Add Comment"/>
+      <div style={{display:"flex",gap:8}}>
+        <div style={{flex:1}}><FInput v={comment} onChange={e=>setComment(e.target.value)} ph="Write a comment..."/></div>
+        <BtnP ch="Post" small onClick={()=>{if(comment.trim()){dispatch({type:"ADD_CASE_COMMENT",id:cas.id,author:isAdmin?"Admin":"Partner",text:comment});setComment("");}}}/>
+      </div>
+    </Modal>
+  );
+};
+
+/* ═══════════════════ TIER COMPARE MODAL ═══════════════════ */
+const TierCompareModal=({partner,onClose})=>{
+  const next=NEXT_TIER[partner.tier];
+  return (
+    <Modal title="Tier Comparison" subtitle="Benefits, kickbacks & how to progress" onClose={onClose} wide>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:12,marginBottom:20}}>
+        {TIERS.map(tier=>{
+          const cfg=TIER_CONFIG[tier];
+          const isCur=tier===partner.tier;
+          const isNext=NEXT_TIER[partner.tier]===tier;
+          return (
+            <div key={tier} style={{borderRadius:10,border:`2px solid ${isCur?C.green:cfg.border}`,background:isCur?C.greenLight:C.white,overflow:"hidden",boxShadow:isCur?"0 4px 20px rgba(0,131,91,.15)":"none"}}>
+              <div style={{background:isCur?C.green:cfg.bg,padding:"14px 16px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                <div>
+                  <div style={{fontWeight:800,fontSize:15,color:isCur?"#fff":cfg.color,fontFamily:"'Sora',sans-serif"}}>{tier==="Gold"?"🥇":tier==="Silver"?"🥈":"🥉"} {tier}</div>
+                  <div style={{fontSize:10,color:isCur?"rgba(255,255,255,.6)":C.textMid,fontFamily:"'DM Sans',sans-serif"}}>{tier==="Gold"?"3,000+ pts":tier==="Silver"?"1,000–2,999":"0–999 pts"}</div>
+                </div>
+                {isCur&&<span style={{background:"rgba(255,255,255,.25)",color:"#fff",borderRadius:99,padding:"2px 8px",fontSize:10,fontWeight:700,fontFamily:"'DM Sans',sans-serif"}}>CURRENT</span>}
+                {isNext&&<span style={{background:C.goldLight,color:"#7A4800",borderRadius:99,padding:"2px 8px",fontSize:10,fontWeight:700,fontFamily:"'DM Sans',sans-serif"}}>NEXT</span>}
+              </div>
+              <div style={{padding:"14px 16px"}}>
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:7,marginBottom:12}}>
+                  {[{l:"Kickback",v:`${cfg.kickback}%`},{l:"Per Client",v:`${fmtK(cfg.bonusPerClient)} NOK`},{l:"Per Lead",v:`${cfg.leadBonus} NOK`},{l:"MDF/yr",v:cfg.mdf?fmtNOK(cfg.mdf):"None"}].map(r=>(
+                    <div key={r.l} style={{background:C.pageGrey,borderRadius:6,padding:"7px 9px"}}>
+                      <div style={{fontSize:9,color:C.textLight,textTransform:"uppercase",letterSpacing:.5,fontFamily:"'DM Sans',sans-serif"}}>{r.l}</div>
+                      <div style={{fontSize:14,fontWeight:800,color:isCur?C.green:C.text,fontFamily:"'Sora',sans-serif"}}>{r.v}</div>
+                    </div>
+                  ))}
+                </div>
+                <div style={{borderTop:`1px solid ${C.cardBorder}`,paddingTop:10}}>
+                  {cfg.benefits.map(b=><div key={b} style={{fontSize:11,color:C.textMid,fontFamily:"'DM Sans',sans-serif",padding:"2px 0",display:"flex",gap:5}}><span style={{color:isCur?C.green:C.textLight}}>✓</span><span>{b}</span></div>)}
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      {next&&<div style={{background:C.goldLight,borderRadius:8,padding:"14px 18px",border:`1px solid ${C.gold}40`}}>
+        <div style={{fontWeight:700,color:"#7A4800",fontFamily:"'Sora',sans-serif",marginBottom:8,fontSize:13}}>🚀 How to reach {next} tier</div>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10}}>
+          {[{action:"Submit leads",pts:TIER_CONFIG[partner.tier].leadBonus,n:Math.ceil((TIER_CONFIG[next].pointsMin-partner.points)/TIER_CONFIG[partner.tier].leadBonus)},{action:"Onboard clients",pts:100,n:Math.ceil((TIER_CONFIG[next].pointsMin-partner.points)/100)},{action:"Complete courses",pts:200,n:Math.ceil((TIER_CONFIG[next].pointsMin-partner.points)/200)}].map(r=>(
+            <div key={r.action} style={{background:"rgba(232,162,0,.1)",borderRadius:6,padding:"10px 12px"}}>
+              <div style={{fontSize:12,fontWeight:700,color:"#7A4800",fontFamily:"'Sora',sans-serif"}}>{r.n}×</div>
+              <div style={{fontSize:11,color:"#7A4800",fontFamily:"'DM Sans',sans-serif"}}>{r.action}</div>
+              <div style={{fontSize:10,color:"rgba(122,72,0,.6)",fontFamily:"'DM Sans',sans-serif"}}>({r.pts} pts each)</div>
+            </div>
+          ))}
+        </div>
+      </div>}
+    </Modal>
+  );
+};
+
+/* ═══════════════════ PARTNER PROFILE MODAL (admin) ═══════════════════ */
+const PartnerProfileModal=({partner,onClose,onNavigate})=>{
+  const {state}=useContext(AppCtx);
+  const customers=state.customers[partner.id]||[];
+  const leads=state.leads.filter(l=>l.partnerId===partner.id);
+  const cases=state.cases.filter(c=>c.partnerId===partner.id);
+  const cfg=TIER_CONFIG[partner.tier];
+  return (
+    <Modal title={partner.name} subtitle={`${partner.region} · Member since ${partner.joined} · ${partner.contact}`} onClose={onClose} wide>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,marginBottom:16}}>
+        <TierProgress partner={partner}/>
+        <div style={{display:"flex",flexDirection:"column",gap:10}}>
+          {[{l:"YTD Commission",v:fmtNOK(partner.ytdKickback),a:true},{l:"Total ARR (clients)",v:fmtNOK(customers.reduce((s,c)=>s+c.arr,0)),a:true},{l:"Clients",v:customers.length},{l:"Leads",v:leads.length},{l:"Won Deals",v:partner.wins},{l:"Open Cases",v:cases.filter(c=>c.status!=="Resolved").length}].map(r=>(
+            <div key={r.l} style={{flex:1,background:r.a?C.greenLight:C.pageGrey,borderRadius:8,padding:"8px 12px",border:`1px solid ${r.a?C.greenMid:C.cardBorder}`}}>
+              <div style={{fontSize:9,color:r.a?C.greenDark:C.textLight,textTransform:"uppercase",letterSpacing:.6,fontFamily:"'DM Sans',sans-serif"}}>{r.l}</div>
+              <div style={{fontSize:16,fontWeight:800,color:r.a?C.green:C.text,fontFamily:"'Sora',sans-serif"}}>{r.v}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+      <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+        <BtnP ch="View Clients" small onClick={()=>{onNavigate("clients");onClose();}}/>
+        <BtnP ch="View Leads" small onClick={()=>{onNavigate("leads");onClose();}}/>
+        <BtnG ch="View Cases" small onClick={()=>{onNavigate("cases");onClose();}}/>
+        <BtnG ch={`📧 ${partner.email}`} small onClick={onClose}/>
+      </div>
+    </Modal>
+  );
+};
+
+/* ═══════════════════ PLAN SECTION ═══════════════════ */
+const PlanSection=({partner,isAdmin})=>{
+  const {state,dispatch}=useContext(AppCtx);
+  const [modal,setModal]=useState(null);
+  const [selPartner,setSelPartner]=useState(null);
+  const cfg=TIER_CONFIG[partner.tier];
+  const customers=state.customers[partner.id]||[];
+  const leads=state.leads.filter(l=>l.partnerId===partner.id);
+  const goalCurrent={clients:customers.filter(c=>c.status!=="Churned").length,ba:Math.round(customers.filter(c=>c.status==="Active").length*.7),revenue:partner.revenue,leads:leads.length};
+  const GOALS=[
+    {key:"clients",label:"New Clients in Tripletex",icon:"👥",targets:{Bronze:5,Silver:10,Gold:20},unit:"clients"},
+    {key:"ba",label:"Activated BA Accounts",icon:"✅",targets:{Bronze:3,Silver:8,Gold:15},unit:"accounts"},
+    {key:"revenue",label:"Revenue Growth (NOK)",icon:"💰",targets:{Bronze:500000,Silver:1500000,Gold:3000000},unit:"NOK"},
+    {key:"leads",label:"Leads Submitted",icon:"📋",targets:{Bronze:3,Silver:6,Gold:10},unit:"leads"},
+  ];
+  return (
+    <div>
+      {/* Hero */}
+      <div style={{borderRadius:10,overflow:"hidden",marginBottom:20,position:"relative",background:`linear-gradient(110deg,${C.greenDeep} 0%,${C.greenDark} 50%,#009A6C 100%)`,padding:"22px 28px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+        <div>
+          <div style={{color:"rgba(255,255,255,.5)",fontSize:10,fontWeight:700,textTransform:"uppercase",letterSpacing:1.2,fontFamily:"'DM Sans',sans-serif",marginBottom:4}}>{isAdmin?"Admin Dashboard":"Partner Hub"}</div>
+          <h1 style={{margin:0,color:"#fff",fontFamily:"'Sora',sans-serif",fontSize:20,fontWeight:800}}>{isAdmin?"Programme Overview — Årshjul 2025":`${partner.name} — Årshjul 2025`}</h1>
+          <p style={{margin:"6px 0 0",color:"rgba(255,255,255,.65)",fontSize:12,fontFamily:"'DM Sans',sans-serif"}}>{isAdmin?`${state.partners.length} partners · ${state.partners.filter(p=>p.tier==="Gold").length} Gold · ${state.partners.filter(p=>p.tier==="Silver").length} Silver · ${state.partners.filter(p=>p.tier==="Bronze").length} Bronze`:`${partner.contact} · ${partner.region} · Since ${partner.joined}`}</p>
+        </div>
+        <div style={{position:"absolute",right:20,top:"50%",transform:"translateY(-50%)",opacity:.05,fontSize:110,pointerEvents:"none",color:"#fff"}}>✳</div>
+        {!isAdmin&&<button onClick={()=>setModal("tiercompare")} style={{background:"rgba(255,255,255,.15)",color:"#fff",border:"1px solid rgba(255,255,255,.3)",borderRadius:8,padding:"8px 16px",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"'DM Sans',sans-serif",flexShrink:0}}>Tier Roadmap →</button>}
+      </div>
+      {/* Partner view: tier progress + commission */}
+      {!isAdmin&&(
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,marginBottom:16}}>
+          <TierProgress partner={partner} onCompare={()=>setModal("tiercompare")}/>
+          <Card>
+            <SectionDivider title="Commission Structure"/>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:12}}>
+              {[{l:"Kickback Rate",v:`${cfg.kickback}%`,a:true},{l:"YTD Earned",v:fmtNOK(partner.ytdKickback),a:true},{l:"Per New Client",v:`${fmtK(cfg.bonusPerClient)} NOK`},{l:"Per Won Lead",v:`${cfg.leadBonus} NOK`}].map(r=>(
+                <div key={r.l} style={{background:r.a?C.greenLight:C.pageGrey,borderRadius:8,padding:"10px 12px",border:`1px solid ${r.a?C.greenMid:C.cardBorder}`}}>
+                  <div style={{fontSize:9,color:r.a?C.greenDark:C.textLight,textTransform:"uppercase",letterSpacing:.6,fontFamily:"'DM Sans',sans-serif"}}>{r.l}</div>
+                  <div style={{fontSize:18,fontWeight:800,color:r.a?C.green:C.text,fontFamily:"'Sora',sans-serif"}}>{r.v}</div>
+                </div>
+              ))}
+            </div>
+            <div style={{background:C.goldLight,borderRadius:8,padding:"10px 12px",border:`1px solid ${C.gold}30`}}>
+              <div style={{fontSize:10,fontWeight:700,color:"#7A4800",fontFamily:"'DM Sans',sans-serif",marginBottom:4}}>💡 {partner.tier} Benefits</div>
+              {cfg.benefits.slice(0,3).map(b=><div key={b} style={{fontSize:11,color:"#7A4800",fontFamily:"'DM Sans',sans-serif",display:"flex",gap:5,padding:"1px 0"}}><span>✓</span><span>{b}</span></div>)}
+            </div>
+          </Card>
+        </div>
+      )}
+      {/* Clickable metrics */}
+      <div style={{display:"flex",gap:10,marginBottom:14,flexWrap:"wrap"}}>
+        {GOALS.map(g=>{
+          const curr=goalCurrent[g.key];
+          const target=g.targets[partner.tier];
+          const pct=Math.min(100,Math.round((curr/target)*100));
+          return <Metric key={g.key} label={g.label} icon={g.icon} accent={pct>=80}
+            value={g.key==="revenue"?fmtNOK(curr):curr}
+            sub={`Target: ${g.key==="revenue"?fmtNOK(target):target} · ${pct}%`}
+            onClick={g.key==="clients"?()=>setModal("customers"):g.key==="leads"?()=>setModal("leads"):undefined}
+            active={modal===("customers"&&g.key==="clients")||(modal==="leads"&&g.key==="leads")}/>;
+        })}
+      </div>
+      {/* Goals detail */}
+      <Card noPad style={{marginBottom:14}}>
+        <div style={{padding:"13px 18px",borderBottom:`1px solid ${C.cardBorder}`}}>
+          <h3 style={{margin:0,fontSize:13,fontWeight:700,color:C.text,fontFamily:"'Sora',sans-serif"}}>Annual Goals — {partner.tier} Tier Targets</h3>
+        </div>
+        <div style={{padding:"2px 18px 14px"}}>
+          {GOALS.map((g,i)=>{
+            const curr=goalCurrent[g.key];
+            const target=g.targets[partner.tier];
+            const pct=Math.min(100,Math.round((curr/target)*100));
+            const disp=g.key==="revenue"?`${(curr/1e6).toFixed(1)}M / ${(target/1e6).toFixed(1)}M NOK`:`${curr} / ${target} ${g.unit}`;
+            const clickable=g.key==="clients"||g.key==="leads";
+            return (
+              <div key={g.key} style={{padding:"12px 0",borderBottom:i<GOALS.length-1?`1px solid ${C.cardBorder}`:"none",cursor:clickable?"pointer":"default",borderRadius:6,margin:"0 -4px",padding:"12px 4px"}}
+                onClick={clickable?()=>setModal(g.key==="clients"?"customers":"leads"):undefined}
+                onMouseEnter={e=>{if(clickable)e.currentTarget.style.background=C.rowHover;}}
+                onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:7}}>
+                  <div style={{display:"flex",alignItems:"center",gap:8}}>
+                    <span style={{fontSize:16}}>{g.icon}</span>
+                    <span style={{fontWeight:600,fontSize:13,color:C.text,fontFamily:"'DM Sans',sans-serif"}}>{g.label}</span>
+                    {clickable&&<span style={{fontSize:9,color:C.green,fontWeight:700,background:C.greenLight,padding:"1px 6px",borderRadius:99,fontFamily:"'DM Sans',sans-serif"}}>drill in ↗</span>}
+                  </div>
+                  <div style={{display:"flex",alignItems:"center",gap:10}}>
+                    <span style={{fontSize:11,color:C.textMid,fontFamily:"'DM Sans',sans-serif"}}>{disp}</span>
+                    <span style={{background:C.goldLight,color:"#7A4800",borderRadius:99,padding:"1px 8px",fontSize:10,fontWeight:700,fontFamily:"'DM Sans',sans-serif"}}>+pts</span>
+                    <span style={{fontWeight:800,fontSize:13,minWidth:34,textAlign:"right",color:pct>=80?C.green:pct>=50?C.gold:C.red,fontFamily:"'Sora',sans-serif"}}>{pct}%</span>
+                  </div>
+                </div>
+                <Bar val={curr} max={target}/>
+              </div>
+            );
+          })}
+        </div>
+      </Card>
+      {/* Admin: all partners table */}
+      {isAdmin&&(
+        <Card noPad>
+          <div style={{padding:"13px 18px",borderBottom:`1px solid ${C.cardBorder}`,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+            <h3 style={{margin:0,fontSize:13,fontWeight:700,color:C.text,fontFamily:"'Sora',sans-serif"}}>All Partners</h3>
+            <BtnG ch="Export CSV" small/>
+          </div>
+          <div style={{overflowX:"auto"}}>
+            <table style={{width:"100%",borderCollapse:"collapse"}}>
+              <thead><tr><TH ch="Partner"/><TH ch="Tier"/><TH ch="Points"/><TH ch="Kickback"/><TH ch="Clients"/><TH ch="YTD Commission" right/><TH ch="Progress to Next"/><TH ch=""/></tr></thead>
+              <tbody>{state.partners.map(p=>{
+                const nc=NEXT_TIER[p.tier];
+                const ncMin=nc?TIER_CONFIG[nc].pointsMin:null;
+                const pct=nc?Math.min(100,Math.round(((p.points-TIER_CONFIG[p.tier].pointsMin)/(ncMin-TIER_CONFIG[p.tier].pointsMin))*100)):100;
+                const cust=state.customers[p.id]||[];
+                return(
+                  <tr key={p.id} onMouseEnter={e=>e.currentTarget.style.background=C.rowHover} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+                    <td style={{padding:"10px 12px",borderBottom:`1px solid ${C.cardBorder}`}}><span style={{fontWeight:600,fontSize:13,color:C.blue,cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}} onClick={()=>setSelPartner(p)}>{p.name}</span></td>
+                    <TD><TierBadge tier={p.tier}/></TD>
+                    <TD><span style={{fontWeight:700,color:C.gold,fontFamily:"'Sora',sans-serif"}}>{p.points.toLocaleString()}</span></TD>
+                    <TD><span style={{fontWeight:700,color:C.green,fontFamily:"'Sora',sans-serif"}}>{TIER_CONFIG[p.tier].kickback}%</span></TD>
+                    <TD>{cust.length}</TD>
+                    <td style={{padding:"10px 12px",textAlign:"right",borderBottom:`1px solid ${C.cardBorder}`,fontSize:13,fontWeight:700,color:C.green,fontFamily:"'Sora',sans-serif"}}>{fmtNOK(p.ytdKickback)}</td>
+                    <td style={{padding:"10px 12px",borderBottom:`1px solid ${C.cardBorder}`,minWidth:150}}>
+                      {nc?<div style={{display:"flex",alignItems:"center",gap:6}}><Bar val={p.points-TIER_CONFIG[p.tier].pointsMin} max={ncMin-TIER_CONFIG[p.tier].pointsMin} thin/><span style={{fontSize:10,fontWeight:700,minWidth:28,color:C.textMid,fontFamily:"'Sora',sans-serif"}}>{pct}%</span></div>:<span style={{fontSize:11,color:C.green,fontWeight:700,fontFamily:"'DM Sans',sans-serif"}}>MAX 🥇</span>}
+                    </td>
+                    <td style={{padding:"10px 12px",borderBottom:`1px solid ${C.cardBorder}`}}><button onClick={()=>setSelPartner(p)} style={{background:C.blueLight,color:C.blue,border:"none",borderRadius:6,padding:"4px 10px",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}>Profile</button></td>
+                  </tr>
+                );
+              })}</tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+      {modal==="customers"&&<CustomersModal partner={partner} onClose={()=>setModal(null)}/>}
+      {modal==="leads"&&<div style={{position:"fixed",inset:0,background:"rgba(22,33,58,.6)",zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center"}} onClick={e=>{if(e.target===e.currentTarget)setModal(null);}}><div style={{background:C.white,borderRadius:12,padding:0,maxWidth:800,width:"100%",maxHeight:"80vh",overflow:"auto",margin:"0 20px"}}><div style={{padding:"16px 24px",borderBottom:`1px solid ${C.cardBorder}`,display:"flex",justifyContent:"space-between",alignItems:"center"}}><h2 style={{margin:0,fontSize:16,fontWeight:800,color:C.text,fontFamily:"'Sora',sans-serif"}}>Lead Pipeline — {partner.name}</h2><button onClick={()=>setModal(null)} style={{background:C.pageGrey,border:"none",borderRadius:6,width:30,height:30,cursor:"pointer",fontSize:16,color:C.textMid}}>✕</button></div><div style={{padding:24}}><LeadTable leads={leads} partner={partner}/></div></div></div>}
+      {modal==="tiercompare"&&<TierCompareModal partner={partner} onClose={()=>setModal(null)}/>}
+      {selPartner&&<PartnerProfileModal partner={selPartner} onClose={()=>setSelPartner(null)} onNavigate={(view)=>console.log(view)}/>}
+    </div>
+  );
+};
+
+/* ═══════════════════ LEAD TABLE (reusable) ═══════════════════ */
+const LeadTable=({leads,partner})=>{
+  const {state}=useContext(AppCtx);
+  const [selLead,setSelLead]=useState(null);
+  const cfg=TIER_CONFIG[partner.tier];
+  return(<>
+    <div style={{overflowX:"auto"}}>
+      <table style={{width:"100%",borderCollapse:"collapse"}}>
+        <thead><tr><TH ch="Company"/><TH ch="Type"/><TH ch="Value (NOK)" right/><TH ch={`Kickback (${cfg.kickback}%)`} right/><TH ch="Status"/><TH ch="Date"/><TH ch=""/></tr></thead>
+        <tbody>{leads.map(l=>(
+          <tr key={l.id} onMouseEnter={e=>e.currentTarget.style.background=C.rowHover} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+            <td style={{padding:"10px 12px",borderBottom:`1px solid ${C.cardBorder}`}}><span style={{fontWeight:600,fontSize:13,color:C.blue,cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}} onClick={()=>setSelLead(l)}>{l.company}</span></td>
+            <TD>{l.type}</TD>
+            <td style={{padding:"10px 12px",textAlign:"right",borderBottom:`1px solid ${C.cardBorder}`,fontSize:13,fontWeight:600,color:C.text,fontFamily:"'Sora',sans-serif"}}>{l.value.toLocaleString()}</td>
+            <td style={{padding:"10px 12px",textAlign:"right",borderBottom:`1px solid ${C.cardBorder}`,fontSize:13,fontWeight:700,color:C.green,fontFamily:"'Sora',sans-serif"}}>{Math.round(l.value*(cfg.kickback/100)).toLocaleString()}</td>
+            <TD><Pill s={l.status}/></TD>
+            <TD>{l.date}</TD>
+            <td style={{padding:"10px 12px",borderBottom:`1px solid ${C.cardBorder}`}}><button onClick={()=>setSelLead(l)} style={{background:C.blueLight,color:C.blue,border:"none",borderRadius:6,padding:"4px 10px",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}>Details</button></td>
+          </tr>
+        ))}</tbody>
+      </table>
+    </div>
+    {selLead&&<LeadDetailModal lead={selLead} partner={partner} onClose={()=>setSelLead(null)}/>}
+  </>);
+};
+
+/* ═══════════════════ ENABLE SECTION ═══════════════════ */
+const EnableSection=({partner})=>{
+  const {state,dispatch}=useContext(AppCtx);
+  const p=state.partners.find(x=>x.id===partner.id)||partner;
+  const cfg=TIER_CONFIG[p.tier];
+  const [selCourse,setSelCourse]=useState(null);
+  const earned=COURSES.filter(c=>p.courses.includes(c.id)).reduce((s,c)=>s+c.pts,0);
+  return(
+    <div>
+      <div style={{display:"flex",gap:10,marginBottom:18,flexWrap:"wrap"}}>
+        <Metric label="Completed" value={`${p.courses.length}/${COURSES.length}`} icon="✅" accent/>
+        <Metric label="Points Earned" value={earned.toLocaleString()} sub="from courses" icon="⭐" accent/>
+        <Metric label="Certifications" value={COURSES.filter(c=>c.cert&&p.courses.includes(c.id)).length} icon="🏅"/>
+        <Metric label="Cert Bonus" value={`${fmtK(cfg.certBonus)} NOK`} sub="per certificate" icon="💰"/>
+        <Metric label="Remaining" value={COURSES.filter(c=>!p.courses.includes(c.id)).reduce((s,c)=>s+c.pts,0)} sub="pts available" icon="📈"/>
+      </div>
+      <Card noPad style={{marginBottom:14}}>
+        <div style={{padding:"13px 18px",borderBottom:`1px solid ${C.cardBorder}`,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+          <h3 style={{margin:0,fontSize:13,fontWeight:700,color:C.text,fontFamily:"'Sora',sans-serif"}}>Learning Paths</h3>
+          <span style={{fontSize:11,color:C.textMid,fontFamily:"'DM Sans',sans-serif"}}>Complete all → Gold tier + Diploma 🎓</span>
+        </div>
+        {COURSES.map((c,i)=>{
+          const done=p.courses.includes(c.id);
+          return(
+            <div key={c.id} style={{padding:"14px 18px",display:"flex",alignItems:"center",gap:14,justifyContent:"space-between",borderBottom:i<COURSES.length-1?`1px solid ${C.cardBorder}`:"none",background:done?"#FAFFFE":C.white,cursor:"pointer",transition:"background .1s"}}
+              onMouseEnter={e=>e.currentTarget.style.background=C.rowHover}
+              onMouseLeave={e=>e.currentTarget.style.background=done?"#FAFFFE":C.white}>
+              <div style={{display:"flex",alignItems:"center",gap:12}}>
+                <div style={{width:36,height:36,borderRadius:8,background:done?C.greenLight:C.pageGrey,display:"flex",alignItems:"center",justifyContent:"center",fontSize:17,flexShrink:0}}>{done?"✅":"📖"}</div>
+                <div>
+                  <div style={{fontWeight:600,fontSize:13,color:C.text,fontFamily:"'DM Sans',sans-serif"}}>{c.title}</div>
+                  <div style={{fontSize:11,color:C.textMid,marginTop:1,fontFamily:"'DM Sans',sans-serif"}}>{c.dur}{c.cert?` · 🏅 +${fmtK(cfg.certBonus)} NOK cert bonus`:""}</div>
+                </div>
+              </div>
+              <div style={{display:"flex",alignItems:"center",gap:10}}>
+                <span style={{background:C.goldLight,color:"#7A4800",borderRadius:99,padding:"2px 8px",fontSize:10,fontWeight:700,fontFamily:"'DM Sans',sans-serif"}}>+{c.pts} pts</span>
+                {done?<span style={{fontSize:12,color:C.green,fontWeight:700,fontFamily:"'DM Sans',sans-serif"}}>Completed ✓</span>:<BtnG ch="Start →" small onClick={()=>setSelCourse(c)}/>}
+              </div>
+            </div>
+          );
+        })}
+      </Card>
+      <div style={{background:`linear-gradient(110deg,${C.greenDeep},${C.green})`,borderRadius:8,padding:"16px 22px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+        <div>
+          <div style={{fontWeight:700,color:"#fff",fontSize:14,fontFamily:"'Sora',sans-serif"}}>🏆 Complete all courses → Gold tier + Diploma</div>
+          <div style={{fontSize:12,color:"rgba(255,255,255,.65)",marginTop:3,fontFamily:"'DM Sans',sans-serif"}}>{COURSES.filter(c=>!p.courses.includes(c.id)).length} left · {COURSES.filter(c=>!p.courses.includes(c.id)).reduce((s,c)=>s+c.pts,0)} pts remaining</div>
+        </div>
+        <button style={{background:"#fff",color:C.green,border:"none",borderRadius:6,padding:"8px 18px",fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"'DM Sans',sans-serif",flexShrink:0}}>View All Rewards</button>
+      </div>
+      {selCourse&&(
+        <Modal title={selCourse.title} subtitle={`${selCourse.dur} · +${selCourse.pts} pts${selCourse.cert?` · 🏅 +${fmtK(cfg.certBonus)} NOK cert bonus`:""}`} onClose={()=>setSelCourse(null)}>
+          <div style={{background:C.pageGrey,borderRadius:8,padding:"14px 16px",marginBottom:16}}>
+            <div style={{fontSize:13,color:C.text,fontFamily:"'DM Sans',sans-serif"}}>{selCourse.desc}</div>
+          </div>
+          <div style={{background:C.greenLight,borderRadius:8,padding:"12px 14px",marginBottom:16,border:`1px solid ${C.greenMid}`}}>
+            <div style={{fontSize:12,color:C.greenDark,fontFamily:"'DM Sans',sans-serif"}}>
+              ✓ Earn <strong>+{selCourse.pts} pts</strong> on completion
+              {selCourse.cert&&<> · 🏅 Certificate + <strong>+{fmtK(cfg.certBonus)} NOK</strong> bonus</>}
+            </div>
+          </div>
+          <BtnP ch={`Complete Course (+${selCourse.pts} pts)`} full onClick={()=>{dispatch({type:"COMPLETE_COURSE",partnerId:p.id,courseId:selCourse.id});setSelCourse(null);}}/>
+        </Modal>
+      )}
+    </div>
+  );
+};
+
+/* ═══════════════════ RECRUIT SECTION ═══════════════════ */
+const RecruitSection=({partner,isAdmin})=>{
+  const {state,dispatch}=useContext(AppCtx);
+  const [open,setOpen]=useState(false);
+  const [form,setForm]=useState({company:"",type:"New Client",size:"Medium",value:"",notes:""});
+  const set=k=>e=>setForm(f=>({...f,[k]:e.target.value}));
+  const myLeads=isAdmin?state.leads:state.leads.filter(l=>l.partnerId===partner.id);
+  const cfg=TIER_CONFIG[partner.tier];
+  const totalVal=myLeads.reduce((s,l)=>s+l.value,0);
+  const wonVal=myLeads.filter(l=>l.status==="Closed Won").reduce((s,l)=>s+l.value,0);
+  return(
+    <div>
+      <div style={{display:"flex",gap:10,marginBottom:18,flexWrap:"wrap"}}>
+        <Metric label="Total Leads" value={myLeads.length} icon="📋"/>
+        <Metric label="In Progress" value={myLeads.filter(l=>l.status==="In Progress").length} icon="🔵"/>
+        <Metric label="Qualified" value={myLeads.filter(l=>l.status==="Qualified").length} icon="✅" accent/>
+        <Metric label="Closed Won" value={myLeads.filter(l=>l.status==="Closed Won").length} sub={`+${cfg.leadBonus} NOK/win`} icon="🎯" accent/>
+        <Metric label="Pipeline Value" value={fmtNOK(totalVal)} sub={`Won: ${fmtNOK(wonVal)}`} icon="💰" accent/>
+      </div>
+      {!isAdmin&&(
+        <div style={{background:C.greenLight,border:`1px solid ${C.greenMid}`,borderRadius:8,padding:"13px 18px",marginBottom:14,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+          <div>
+            <div style={{fontWeight:700,fontSize:13,color:C.text,fontFamily:"'DM Sans',sans-serif"}}>Submit a lead to Tripletex sales team</div>
+            <div style={{fontSize:11,color:C.textMid,marginTop:2,fontFamily:"'DM Sans',sans-serif"}}>End clients · Large accounts · Agency friends · +{cfg.leadBonus} NOK on close</div>
+          </div>
+          <BtnP ch={open?"Cancel":"+ New Lead"} onClick={()=>setOpen(o=>!o)} small/>
+        </div>
+      )}
+      {open&&(
+        <Card style={{marginBottom:14}}>
+          <SectionDivider title="New Lead Submission"/>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12}}>
+            <div><FLabel t="Company Name"/><FInput v={form.company} onChange={set("company")} ph="Company..."/></div>
+            <div><FLabel t="Lead Type"/><FSelect v={form.type} onChange={set("type")} opts={["New Client","Referral","Agency Friend"]}/></div>
+            <div><FLabel t="Size"/><FSelect v={form.size} onChange={set("size")} opts={["Small","Medium","Large"]}/></div>
+            <div><FLabel t="Est. Value (NOK)"/><FInput v={form.value} onChange={set("value")} ph="e.g. 48000" type="number"/></div>
+            <div style={{gridColumn:"2/-1"}}><FLabel t="Notes"/><FInput v={form.notes} onChange={set("notes")} ph="Context for the sales team..."/></div>
+            <div style={{gridColumn:"1/-1"}}><BtnP ch={`Submit Lead (+50 pts · potential kickback: ${fmtNOK(Math.round((Number(form.value)||0)*(cfg.kickback/100)))})`} full onClick={()=>{if(!form.company)return;dispatch({type:"ADD_LEAD",payload:{company:form.company,partnerId:partner.id,type:form.type,size:form.size,value:Number(form.value)||20000,notes:form.notes}});setForm({company:"",type:"New Client",size:"Medium",value:"",notes:""});setOpen(false);}}/></div>
+          </div>
+        </Card>
+      )}
+      <Card noPad>
+        <div style={{padding:"13px 18px",borderBottom:`1px solid ${C.cardBorder}`,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+          <h3 style={{margin:0,fontSize:13,fontWeight:700,color:C.text,fontFamily:"'Sora',sans-serif"}}>Lead Pipeline</h3>
+          {isAdmin&&<BtnG ch="Export" small/>}
+        </div>
+        <LeadTable leads={myLeads} partner={partner}/>
+      </Card>
+    </div>
+  );
+};
+
+/* ═══════════════════ INCENTIVIZE SECTION ═══════════════════ */
+const IncentivizeSection=({partner})=>{
+  const {state}=useContext(AppCtx);
+  const p=state.partners.find(x=>x.id===partner.id)||partner;
+  const [showCompare,setShowCompare]=useState(false);
+  const cfg=TIER_CONFIG[p.tier];
+  const customers=state.customers[p.id]||[];
+  const leads=state.leads.filter(l=>l.partnerId===p.id);
+  const earnedCourses=COURSES.filter(c=>p.courses.includes(c.id)).reduce((s,c)=>s+c.pts,0);
+  const breakdown=[
+    {l:"Courses completed",pts:earnedCourses,icon:"🎓",detail:`${p.courses.length} of ${COURSES.length}`},
+    {l:"Leads submitted",pts:leads.length*50,icon:"📋",detail:`${leads.length} leads`},
+    {l:"Clients onboarded",pts:customers.length*100,icon:"👥",detail:`${customers.length} clients`},
+    {l:"Certifications",pts:p.certified?cfg.certBonus:0,icon:"🏅",detail:p.certified?"1 cert":"None yet"},
+    {l:"Deals won",pts:p.wins*50,icon:"🎯",detail:`${p.wins} wins`},
+  ];
+  const achievements=[
+    {l:"First Lead",icon:"🎯",earned:leads.length>0,pts:50},
+    {l:"5 Clients",icon:"👥",earned:customers.length>=5,pts:200},
+    {l:"Certification",icon:"🏅",earned:p.certified,pts:cfg.certBonus},
+    {l:"Gold Partner",icon:"🥇",earned:p.tier==="Gold",pts:500},
+    {l:"10 Deals Won",icon:"🚀",earned:p.wins>=10,pts:400},
+    {l:"All Courses",icon:"🎓",earned:p.courses.length>=COURSES.length,pts:350},
+  ];
+  return(
+    <div>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,marginBottom:16}}>
+        <TierProgress partner={p} onCompare={()=>setShowCompare(true)}/>
+        <Card>
+          <SectionDivider title="Points Breakdown" action={<BtnG ch="Compare Tiers" small onClick={()=>setShowCompare(true)}/>}/>
+          {breakdown.map(r=>(
+            <div key={r.l} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 0",borderBottom:`1px solid ${C.cardBorder}`}}>
+              <div>
+                <span style={{fontSize:13,color:C.textMid,fontFamily:"'DM Sans',sans-serif"}}>{r.icon} {r.l}</span>
+                <span style={{fontSize:10,color:C.textLight,marginLeft:6,fontFamily:"'DM Sans',sans-serif"}}>{r.detail}</span>
+              </div>
+              <span style={{fontWeight:800,color:C.gold,fontFamily:"'Sora',sans-serif",fontSize:14}}>+{r.pts.toLocaleString()}</span>
+            </div>
+          ))}
+          <div style={{marginTop:12,padding:"10px 12px",background:C.greenLight,borderRadius:8,display:"flex",justifyContent:"space-between"}}>
+            <span style={{fontSize:13,fontWeight:700,color:C.greenDark,fontFamily:"'DM Sans',sans-serif"}}>Total</span>
+            <span style={{fontSize:18,fontWeight:900,color:C.green,fontFamily:"'Sora',sans-serif"}}>{p.points.toLocaleString()} pts</span>
+          </div>
+        </Card>
+      </div>
+      <Card style={{marginBottom:14}}>
+        <SectionDivider title="Achievements"/>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(6,1fr)",gap:10}}>
+          {achievements.map(a=>(
+            <div key={a.l} style={{borderRadius:8,border:`1px solid ${a.earned?C.green+"40":C.cardBorder}`,background:a.earned?C.greenLight:C.pageGrey,padding:"12px 6px",display:"flex",flexDirection:"column",alignItems:"center",gap:4,opacity:a.earned?1:.4,transition:"opacity .2s"}}>
+              <div style={{fontSize:24}}>{a.icon}</div>
+              <div style={{fontSize:10,fontWeight:600,textAlign:"center",color:C.text,fontFamily:"'DM Sans',sans-serif",lineHeight:1.3}}>{a.l}</div>
+              <div style={{fontSize:11,color:C.gold,fontWeight:800,fontFamily:"'Sora',sans-serif"}}>+{a.pts}</div>
+              {a.earned&&<div style={{fontSize:9,color:C.green,fontWeight:700,fontFamily:"'DM Sans',sans-serif"}}>✓ Earned</div>}
+            </div>
+          ))}
+        </div>
+      </Card>
+      <SectionDivider title="Active Challenges"/>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:12}}>
+        {[{title:"Recruit 2 new partners",sub:`+300 pts · Earn ${fmtNOK(300)}`,deadline:"Apr 30",pts:300},{title:"Complete Sales Playbook",sub:`Cert + 250 pts · +${fmtNOK(cfg.certBonus)}`,deadline:"Mar 31",pts:250},{title:"Close deal > 500k NOK",sub:"Club Tickets + 400 pts",deadline:"Jun 30",pts:400}].map(ch=>(
+          <div key={ch.title} style={{background:`linear-gradient(135deg,${C.navy},#1E3A5F)`,borderRadius:8,padding:"16px 18px",border:`1px solid ${C.navyBorder}`}}>
+            <div style={{background:C.goldLight,color:"#7A4800",borderRadius:99,padding:"2px 9px",fontSize:10,fontWeight:700,display:"inline-block",marginBottom:8,fontFamily:"'DM Sans',sans-serif"}}>+{ch.pts} pts</div>
+            <div style={{fontWeight:700,color:"#fff",fontSize:13,marginBottom:3,fontFamily:"'Sora',sans-serif"}}>{ch.title}</div>
+            <div style={{fontSize:11,color:"rgba(255,255,255,.5)",marginBottom:12,fontFamily:"'DM Sans',sans-serif"}}>{ch.sub} · Ends {ch.deadline}</div>
+            <button style={{background:C.green,color:"#fff",border:"none",borderRadius:6,padding:"6px 14px",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"'DM Sans',sans-serif",width:"100%"}}>Join Challenge</button>
+          </div>
+        ))}
+      </div>
+      {showCompare&&<TierCompareModal partner={p} onClose={()=>setShowCompare(false)}/>}
+    </div>
+  );
+};
+
+/* ═══════════════════ SUPPORT SECTION ═══════════════════ */
+const SupportSection=({partner,isAdmin})=>{
+  const {state,dispatch}=useContext(AppCtx);
+  const [open,setOpen]=useState(false);
+  const [selCase,setSelCase]=useState(null);
+  const [form,setForm]=useState({title:"",cat:"Technical",priority:"Medium",description:""});
+  const set=k=>e=>setForm(f=>({...f,[k]:e.target.value}));
+  const myCases=isAdmin?state.cases:state.cases.filter(c=>c.partnerId===partner.id);
+  return(
+    <div>
+      <div style={{display:"flex",gap:10,marginBottom:18,flexWrap:"wrap"}}>
+        <Metric label="Open" value={myCases.filter(c=>c.status==="Open").length} icon="🔴"/>
+        <Metric label="In Progress" value={myCases.filter(c=>c.status==="In Progress").length} icon="🟡"/>
+        <Metric label="Resolved" value={myCases.filter(c=>c.status==="Resolved").length} icon="🟢" accent/>
+        <Metric label="Avg. Response" value="4h" sub="this month" icon="⚡"/>
+        {isAdmin&&<Metric label="Total Cases" value={myCases.length} icon="📋"/>}
+      </div>
+      {!isAdmin&&(
+        <div style={{background:C.greenLight,border:`1px solid ${C.greenMid}`,borderRadius:8,padding:"13px 18px",marginBottom:14,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+          <div>
+            <div style={{fontWeight:700,fontSize:13,color:C.text,fontFamily:"'DM Sans',sans-serif"}}>Create a support case</div>
+            <div style={{fontSize:11,color:C.textMid,marginTop:2,fontFamily:"'DM Sans',sans-serif"}}>Auto-categorised via Salesforce Flow · Priority SLA: {TIER_CONFIG[partner.tier].kickback>=18?"2h":"4h"}</div>
+          </div>
+          <BtnP ch={open?"Cancel":"+ New Case"} onClick={()=>setOpen(o=>!o)} small/>
+        </div>
+      )}
+      {open&&(
+        <Card style={{marginBottom:14}}>
+          <SectionDivider title="New Case"/>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12}}>
+            <div style={{gridColumn:"1/-1"}}><FLabel t="Title"/><FInput v={form.title} onChange={set("title")} ph="Describe the issue..."/></div>
+            <div><FLabel t="Category"/><FSelect v={form.cat} onChange={set("cat")} opts={["Technical","Feature","Onboarding","Billing"]}/></div>
+            <div><FLabel t="Priority"/><FSelect v={form.priority} onChange={set("priority")} opts={["Low","Medium","High"]}/></div>
+            <div><FLabel t="Description"/></div>
+            <div style={{gridColumn:"1/-1"}}><FTextarea v={form.description} onChange={set("description")} ph="Full description..."/></div>
+            <div style={{gridColumn:"1/-1"}}><BtnP ch="Submit Case" full onClick={()=>{if(!form.title)return;dispatch({type:"ADD_CASE",payload:{partnerId:partner.id,title:form.title,cat:form.cat,priority:form.priority,description:form.description,created:new Date().toISOString().slice(0,10)}});setForm({title:"",cat:"Technical",priority:"Medium",description:""});setOpen(false);}}/></div>
+          </div>
+        </Card>
+      )}
+      <Card noPad>
+        <div style={{padding:"13px 18px",borderBottom:`1px solid ${C.cardBorder}`,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+          <h3 style={{margin:0,fontSize:13,fontWeight:700,color:C.text,fontFamily:"'Sora',sans-serif"}}>Cases</h3>
+          {isAdmin&&<BtnG ch="Open in Service Cloud →" small/>}
+        </div>
+        <div style={{overflowX:"auto"}}>
+          <table style={{width:"100%",borderCollapse:"collapse"}}>
+            <thead><tr><TH ch="Case #"/><TH ch="Title"/>{isAdmin&&<TH ch="Partner"/>}<TH ch="Cat"/><TH ch="Priority"/><TH ch="Status"/><TH ch="Created"/><TH ch=""/></tr></thead>
+            <tbody>{myCases.map(c=>{
+              const pName=PARTNERS.find(p=>p.id===c.partnerId)?.name||"";
+              return(
+                <tr key={c.id} onMouseEnter={e=>e.currentTarget.style.background=C.rowHover} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+                  <td style={{padding:"10px 12px",borderBottom:`1px solid ${C.cardBorder}`}}><span style={{color:C.blue,fontWeight:600,fontSize:13,fontFamily:"monospace",cursor:"pointer"}} onClick={()=>setSelCase(c)}>{c.num}</span></td>
+                  <TD bold>{c.title}</TD>
+                  {isAdmin&&<TD>{pName}</TD>}
+                  <td style={{padding:"10px 12px",borderBottom:`1px solid ${C.cardBorder}`}}><span style={{background:C.pageGrey,borderRadius:4,padding:"2px 7px",fontSize:11,fontWeight:600,fontFamily:"'DM Sans',sans-serif",color:C.textMid}}>{c.cat}</span></td>
+                  <td style={{padding:"10px 12px",borderBottom:`1px solid ${C.cardBorder}`}}><span style={{fontWeight:700,fontSize:12,color:c.priority==="High"?C.red:c.priority==="Medium"?C.orange:C.textMid,fontFamily:"'DM Sans',sans-serif"}}>{c.priority}</span></td>
+                  <TD><Pill s={c.status}/></TD>
+                  <TD>{c.created}</TD>
+                  <td style={{padding:"10px 12px",borderBottom:`1px solid ${C.cardBorder}`}}><button onClick={()=>setSelCase(c)} style={{background:C.blueLight,color:C.blue,border:"none",borderRadius:6,padding:"4px 10px",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}>View</button></td>
+                </tr>
+              );
+            })}</tbody>
+          </table>
+        </div>
+      </Card>
+      {selCase&&<CaseDetailModal cas={selCase} partnerName={PARTNERS.find(p=>p.id===selCase.partnerId)?.name||""} onClose={()=>setSelCase(null)} isAdmin={isAdmin}/>}
+    </div>
+  );
+};
+
+/* ═══════════════════ ACTIVITY FEED (admin sidebar) ═══════════════════ */
+const ActivityFeed=({log,partners})=>(
+  <Card style={{marginBottom:14}}>
+    <SectionDivider title="Recent Activity"/>
+    {log.slice(0,8).map(a=>{
+      const p=partners.find(x=>x.id===a.partner);
+      return(
+        <div key={a.id} style={{display:"flex",gap:10,padding:"8px 0",borderBottom:`1px solid ${C.cardBorder}`}}>
+          <div style={{width:28,height:28,borderRadius:99,background:C.greenLight,display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,flexShrink:0}}>{a.icon}</div>
+          <div>
+            <div style={{fontSize:12,color:C.text,fontFamily:"'DM Sans',sans-serif"}}>{a.text}</div>
+            <div style={{fontSize:10,color:C.textLight,marginTop:1,fontFamily:"'DM Sans',sans-serif"}}>{p?.name} · {a.date}</div>
+          </div>
+        </div>
+      );
+    })}
+  </Card>
+);
+
+/* ═══════════════════ NAV ═══════════════════ */
+const NAV=[
+  {id:"plan",label:"Plan",icon:"🗓"},
+  {id:"enable",label:"Enable",icon:"🎓"},
+  {id:"recruit",label:"Recruit & Sell",icon:"🤝"},
+  {id:"incentivize",label:"Incentivize",icon:"🏆"},
+  {id:"support",label:"Support",icon:"🎧"},
+];
+
+/* ═══════════════════ ROOT APP ═══════════════════ */
+function App(){
+  const [state,dispatch]=useReducer(reducer,{partners:INIT_PARTNERS,customers:INIT_CUSTOMERS,leads:INIT_LEADS,cases:INIT_CASES,activityLog:ACTIVITY_LOG_INIT});
+  const [role,setRole]=useState("partner");
+  const [tab,setTab]=useState("plan");
+  const [pIdx,setPIdx]=useState(0);
+  const [toast,setToast]=useState(null);
+
+  // Wrap dispatch with toast notifications
+  const dispatchWithToast=(action)=>{
+    const msgs={ADD_LEAD:`Lead submitted! +50 pts`,COMPLETE_COURSE:`Course completed!`,ADD_CUSTOMER:`Client added! +100 pts`,UPDATE_LEAD_STATUS:(a)=>a.status==="Closed Won"?`Deal closed! 🎉 Commission earned`:null,ADD_CASE:`Case submitted!`};
+    const msg=typeof msgs[action.type]==="function"?msgs[action.type](action):msgs[action.type];
+    if(msg)setToast(msg);
+    dispatch(action);
+  };
+
+  const partner=state.partners[pIdx];
+
+  useEffect(()=>{
+    const l=document.createElement("link");
+    l.rel="stylesheet";
+    l.href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800;900&family=DM+Sans:wght@400;500;600;700&display=swap";
+    document.head.appendChild(l);
+    document.body.style.margin="0";
+    document.body.style.background=C.pageGrey;
+  },[]);
+
+  const next=NEXT_TIER[partner.tier];
+
+  return(
+    <AppCtx.Provider value={{state,dispatch:dispatchWithToast,toast,setToast}}>
+      <div style={{minHeight:"100vh",background:C.pageGrey,fontFamily:"'DM Sans',sans-serif"}}>
+        <style>{`@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}`}</style>
+
+        {/* TOP NAV */}
+        <div style={{background:C.navy,position:"sticky",top:0,zIndex:200}}>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0 24px",height:52,borderBottom:`1px solid ${C.navyBorder}`}}>
+            <div style={{display:"flex",alignItems:"center",gap:10}}>
+              <div style={{width:32,height:32,borderRadius:8,background:C.green,display:"flex",alignItems:"center",justifyContent:"center",fontSize:17,color:"#fff",fontWeight:900}}>✳</div>
+              <div>
+                <div style={{color:"#fff",fontWeight:800,fontSize:14,lineHeight:1,fontFamily:"'Sora',sans-serif"}}>tripletex</div>
+                <div style={{color:C.green,fontWeight:600,fontSize:10,letterSpacing:.6,textTransform:"uppercase",fontFamily:"'DM Sans',sans-serif"}}>Partner Cloud</div>
+              </div>
+            </div>
+            <div style={{display:"flex",alignItems:"center",gap:10}}>
+              <div style={{display:"flex",background:"rgba(255,255,255,.07)",borderRadius:6,padding:3,gap:2}}>
+                {[{id:"partner",l:"Partner View"},{id:"admin",l:"Admin View"}].map(r=>(
+                  <button key={r.id} onClick={()=>setRole(r.id)} style={{background:role===r.id?C.green:"transparent",color:role===r.id?"#fff":"rgba(255,255,255,.5)",border:"none",borderRadius:5,padding:"5px 14px",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"'DM Sans',sans-serif",transition:"all .15s"}}>{r.l}</button>
+                ))}
+              </div>
+              {role==="partner"&&(
+                <select value={pIdx} onChange={e=>setPIdx(Number(e.target.value))} style={{background:"rgba(255,255,255,.08)",color:"#fff",border:"1px solid rgba(255,255,255,.15)",borderRadius:6,padding:"6px 10px",fontSize:12,fontFamily:"'DM Sans',sans-serif",cursor:"pointer"}}>
+                  {state.partners.map((p,i)=><option key={p.id} value={i} style={{background:C.navy}}>{p.name}</option>)}
+                </select>
+              )}
+              <div style={{width:32,height:32,borderRadius:99,background:C.green,display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontSize:13,fontWeight:800,fontFamily:"'Sora',sans-serif"}}>{role==="admin"?"A":partner.name[0]}</div>
+            </div>
+          </div>
+          {/* Tab nav */}
+          <div style={{display:"flex",padding:"0 24px",gap:2,overflowX:"auto",scrollbarWidth:"none"}}>
+            {NAV.map(n=>(
+              <button key={n.id} onClick={()=>setTab(n.id)} style={{background:"transparent",border:"none",borderBottom:tab===n.id?`3px solid ${C.green}`:"3px solid transparent",color:tab===n.id?"#fff":"rgba(255,255,255,.5)",padding:"10px 16px",fontSize:13,fontWeight:tab===n.id?700:500,cursor:"pointer",fontFamily:"'DM Sans',sans-serif",whiteSpace:"nowrap",transition:"color .15s,border-color .15s",display:"flex",alignItems:"center",gap:6}}>
+                <span style={{fontSize:14}}>{n.icon}</span>{n.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* SUB-HEADER */}
+        <div style={{background:C.white,borderBottom:`1px solid ${C.cardBorder}`,padding:"9px 28px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+          <div style={{display:"flex",alignItems:"center",gap:6}}>
+            <span style={{fontSize:11,color:C.textLight,fontFamily:"'DM Sans',sans-serif"}}>Partner Cloud</span>
+            <span style={{color:C.textLight}}>›</span>
+            <span style={{fontSize:11,fontWeight:600,color:C.textMid,fontFamily:"'DM Sans',sans-serif"}}>{NAV.find(n=>n.id===tab)?.label}</span>
+            {role==="partner"&&<><span style={{color:C.textLight}}>›</span><span style={{fontSize:11,fontWeight:600,color:C.text,fontFamily:"'DM Sans',sans-serif"}}>{partner.name}</span></>}
+          </div>
+          {role==="partner"&&(
+            <div style={{display:"flex",alignItems:"center",gap:10}}>
+              <TierBadge tier={partner.tier}/>
+              <span style={{fontSize:12,color:C.textMid,fontFamily:"'DM Sans',sans-serif"}}>⭐ <strong style={{color:C.gold}}>{partner.points.toLocaleString()}</strong> pts</span>
+              {next&&<span style={{fontSize:11,color:C.textMid,background:C.pageGrey,borderRadius:99,padding:"2px 10px",fontFamily:"'DM Sans',sans-serif"}}>{(TIER_CONFIG[next].pointsMin-partner.points).toLocaleString()} pts to {next}</span>}
+            </div>
+          )}
+          {role==="admin"&&<span style={{fontSize:11,color:C.textMid,fontFamily:"'DM Sans',sans-serif"}}>{state.partners.length} partners · Total YTD: {fmtNOK(state.partners.reduce((s,p)=>s+p.ytdKickback,0))}</span>}
+        </div>
+
+        {/* CONTENT */}
+        <div style={{maxWidth:1280,margin:"0 auto",padding:"22px 28px"}}>
+          {tab==="plan"        &&<PlanSection        partner={partner} isAdmin={role==="admin"}/>}
+          {tab==="enable"      &&<EnableSection       partner={partner}/>}
+          {tab==="recruit"     &&<RecruitSection      partner={partner} isAdmin={role==="admin"}/>}
+          {tab==="incentivize" &&<IncentivizeSection  partner={partner}/>}
+          {tab==="support"     &&<SupportSection      partner={partner} isAdmin={role==="admin"}/>}
+        </div>
+
+        <div style={{textAlign:"center",padding:"18px",borderTop:`1px solid ${C.cardBorder}`,background:C.white}}>
+          <span style={{fontSize:10,color:C.textLight,fontFamily:"'DM Sans',sans-serif"}}>Tripletex Partner Cloud · Salesforce Experience Cloud · Prototype v0.4</span>
+        </div>
+
+        {toast&&<Toast msg={toast} onDone={()=>setToast(null)}/>}
+      </div>
+    </AppCtx.Provider>
+  );
+}
+
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(React.createElement(App));
+</script>
+</body>
+</html>
