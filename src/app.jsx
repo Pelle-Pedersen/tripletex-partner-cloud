@@ -596,7 +596,7 @@ const PartnerProfileModal=({partner,onClose,onNavigate})=>{
 /* ═══════════════════ GOAL EDIT MODAL ═══════════════════ */
 const GOAL_DEFS=[
   {key:"clients",label:"New Clients in Tripletex",unit:"clients",defaults:{Bronze:5,Silver:10,Gold:20}},
-  {key:"ba",label:"Activated BA Accounts",unit:"accounts",defaults:{Bronze:3,Silver:8,Gold:15}},
+  {key:"ba",label:"Activated Voucher Automation Accounts",unit:"accounts",defaults:{Bronze:3,Silver:8,Gold:15}},
   {key:"revenue",label:"Revenue Target (NOK)",unit:"NOK",defaults:{Bronze:500000,Silver:1500000,Gold:3000000}},
   {key:"leads",label:"Leads Submitted",unit:"leads",defaults:{Bronze:3,Silver:6,Gold:10}},
 ];
@@ -641,7 +641,7 @@ const PlanSection=({partner,isAdmin})=>{
   const partnerGoals=state.goals?.[partner.id]||{};
   const GOALS=[
     {key:"clients",label:"New Clients in Tripletex",icon:"👥",targets:{Bronze:5,Silver:10,Gold:20},unit:"clients"},
-    {key:"ba",label:"Activated BA Accounts",icon:"✅",targets:{Bronze:3,Silver:8,Gold:15},unit:"accounts"},
+    {key:"ba",label:"Activated Voucher Automation Accounts",icon:"✅",targets:{Bronze:3,Silver:8,Gold:15},unit:"accounts"},
     {key:"revenue",label:"Revenue Growth (NOK)",icon:"💰",targets:{Bronze:500000,Silver:1500000,Gold:3000000},unit:"NOK"},
     {key:"leads",label:"Leads Submitted",icon:"📋",targets:{Bronze:3,Silver:6,Gold:10},unit:"leads"},
   ];
