@@ -1285,10 +1285,12 @@ const RecruitSection=({partner,isAdmin})=>{
 };
 
 /* ═══════════════════ INCENTIVIZE SECTION ═══════════════════ */
-const IncentivizeSection=({partner})=>{
-  const {state}=useContext(AppCtx);
+const IncentivizeSection=({partner,isAdmin})=>{
+  const {state,dispatch}=useContext(AppCtx);
   const p=state.partners.find(x=>x.id===partner.id)||partner;
   const [showCompare,setShowCompare]=useState(false);
+  const [selAchievement,setSelAchievement]=useState(null);
+  const [joinedChallenges,setJoinedChallenges]=useState(new Set());
   const cfg=TIER_CONFIG[p.tier];
   const customers=state.customers[p.id]||[];
   const leads=state.leads.filter(l=>l.partnerId===p.id);
@@ -1301,13 +1303,85 @@ const IncentivizeSection=({partner})=>{
     {l:"Deals won",pts:p.wins*50,icon:"🎯",detail:`${p.wins} wins`},
   ];
   const achievements=[
-    {l:"First Lead",icon:"🎯",earned:leads.length>0,pts:50},
-    {l:"5 Clients",icon:"👥",earned:customers.length>=5,pts:200},
-    {l:"Certification",icon:"🏅",earned:p.certified,pts:cfg.certBonus},
-    {l:"Gold Partner",icon:"🥇",earned:p.tier==="Gold",pts:500},
-    {l:"10 Deals Won",icon:"🚀",earned:p.wins>=10,pts:400},
-    {l:"All Courses",icon:"🎓",earned:p.courses.length>=COURSES.length,pts:350},
+    {l:"First Lead",icon:"🎯",earned:leads.length>0,pts:50,how:"Submit your first lead via the Recruit & Sell tab."},
+    {l:"5 Clients",icon:"👥",earned:customers.length>=5,pts:200,how:`Onboard 5 clients to Tripletex. You currently have ${customers.length}.`},
+    {l:"Certification",icon:"🏅",earned:p.certified,pts:cfg.certBonus,how:"Complete a certification course in the Enable tab."},
+    {l:"Gold Partner",icon:"🥇",earned:p.tier==="Gold",pts:500,how:"Reach Gold tier by earning 3,000+ points."},
+    {l:"10 Deals Won",icon:"🚀",earned:p.wins>=10,pts:400,how:`Close 10 deals as Closed Won. You currently have ${p.wins}.`},
+    {l:"All Courses",icon:"🎓",earned:p.courses.length>=COURSES.length,pts:350,how:`Complete all ${COURSES.length} courses in the Enable tab. You've done ${p.courses.length}.`},
   ];
+  const CHALLENGES=[
+    {title:"Recruit 2 new partners",sub:`+300 pts · Earn ${fmtNOK(300)}`,deadline:"Apr 30",pts:300,desc:"Refer two new accounting firms or resellers to the Tripletex Partner Programme. Both must sign up and be approved."},
+    {title:"Complete Sales Playbook",sub:`Cert + 250 pts · +${fmtNOK(cfg.certBonus)}`,deadline:"Mar 31",pts:250,desc:"Complete the Partner Sales Playbook course in the Enable tab and earn your certification before the deadline."},
+    {title:"Close deal > 500k NOK",sub:"Club Tickets + 400 pts",deadline:"Jun 30",pts:400,desc:"Submit and close a single lead with a deal value above 500,000 NOK. Submit via Recruit & Sell, then get it marked Closed Won."},
+  ];
+  const joinChallenge=ch=>{
+    setJoinedChallenges(prev=>new Set([...prev,ch.title]));
+  };
+  if(isAdmin){
+    const sorted=[...state.partners].sort((a,b)=>b.points-a.points);
+    const totalPts=state.partners.reduce((s,pp)=>s+pp.points,0);
+    const tierCounts=TIERS.reduce((acc,t)=>({...acc,[t]:state.partners.filter(pp=>pp.tier===t).length}),{});
+    return(
+      <div>
+        <div style={{display:"flex",gap:10,marginBottom:16,flexWrap:"wrap"}}>
+          <Metric label="Total Programme Points" value={totalPts.toLocaleString()} icon="⭐" accent/>
+          <Metric label="Gold Partners" value={tierCounts.Gold} icon="🥇" accent/>
+          <Metric label="Silver Partners" value={tierCounts.Silver} icon="🥈"/>
+          <Metric label="Bronze Partners" value={tierCounts.Bronze} icon="🥉"/>
+          <Metric label="Certified Partners" value={state.partners.filter(pp=>pp.certified).length} icon="🏅"/>
+        </div>
+        <Card noPad style={{marginBottom:16}}>
+          <div style={{padding:"13px 18px",borderBottom:`1px solid ${C.cardBorder}`}}>
+            <h3 style={{margin:0,fontSize:13,fontWeight:700,color:C.text,fontFamily:"'Sora',sans-serif"}}>Partner Leaderboard — Points</h3>
+          </div>
+          <table style={{width:"100%",borderCollapse:"collapse"}}>
+            <thead><tr><TH ch="#"/><TH ch="Partner"/><TH ch="Tier"/><TH ch="Points"/><TH ch="Clients"/><TH ch="Wins"/><TH ch="Courses"/><TH ch="Certified"/></tr></thead>
+            <tbody>{sorted.map((pp,i)=>{
+              const cust=state.customers[pp.id]||[];
+              const coursePct=Math.round((pp.courses.length/COURSES.length)*100);
+              return(
+                <tr key={pp.id} onMouseEnter={e=>e.currentTarget.style.background=C.rowHover} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+                  <td style={{padding:"10px 12px",borderBottom:`1px solid ${C.cardBorder}`,fontWeight:800,fontSize:14,color:i===0?C.gold:i===1?C.textMid:C.textLight,fontFamily:"'Sora',sans-serif",width:36}}>{i===0?"🥇":i===1?"🥈":i===2?"🥉":i+1}</td>
+                  <td style={{padding:"10px 12px",borderBottom:`1px solid ${C.cardBorder}`,fontWeight:600,fontSize:13,color:C.text,fontFamily:"'DM Sans',sans-serif"}}>{pp.name}</td>
+                  <TD><TierBadge tier={pp.tier}/></TD>
+                  <td style={{padding:"10px 12px",borderBottom:`1px solid ${C.cardBorder}`,fontWeight:800,fontSize:13,color:C.gold,fontFamily:"'Sora',sans-serif"}}>{pp.points.toLocaleString()}</td>
+                  <TD>{cust.length}</TD>
+                  <TD>{pp.wins}</TD>
+                  <td style={{padding:"10px 12px",borderBottom:`1px solid ${C.cardBorder}`,minWidth:140}}>
+                    <div style={{display:"flex",alignItems:"center",gap:6}}><Bar val={pp.courses.length} max={COURSES.length} thin/><span style={{fontSize:10,fontWeight:700,color:coursePct===100?C.green:C.textMid,fontFamily:"'Sora',sans-serif",minWidth:32}}>{coursePct}%</span></div>
+                  </td>
+                  <TD>{pp.certified?"🏅 Yes":"—"}</TD>
+                </tr>
+              );
+            })}</tbody>
+          </table>
+        </Card>
+        <Card>
+          <SectionDivider title="Programme Achievement Overview"/>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10}}>
+            {achievements.map(a=>{
+              const earnedCount=state.partners.filter(pp=>{
+                const ppCust=state.customers[pp.id]||[];
+                const ppLeads=state.leads.filter(l=>l.partnerId===pp.id);
+                return a.l==="First Lead"?ppLeads.length>0:a.l==="5 Clients"?ppCust.length>=5:a.l==="Certification"?pp.certified:a.l==="Gold Partner"?pp.tier==="Gold":a.l==="10 Deals Won"?pp.wins>=10:pp.courses.length>=COURSES.length;
+              }).length;
+              return(
+                <div key={a.l} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",background:C.pageGrey,borderRadius:8,border:`1px solid ${C.cardBorder}`}}>
+                  <div style={{fontSize:22}}>{a.icon}</div>
+                  <div style={{flex:1}}>
+                    <div style={{fontWeight:600,fontSize:12,color:C.text,fontFamily:"'DM Sans',sans-serif"}}>{a.l}</div>
+                    <div style={{fontSize:11,color:C.textMid,fontFamily:"'DM Sans',sans-serif",marginBottom:4}}>{earnedCount} / {state.partners.length} partners</div>
+                    <Bar val={earnedCount} max={state.partners.length} thin/>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </Card>
+      </div>
+    );
+  }
   return(
     <div>
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,marginBottom:16}}>
@@ -1333,26 +1407,51 @@ const IncentivizeSection=({partner})=>{
         <SectionDivider title="Achievements"/>
         <div style={{display:"grid",gridTemplateColumns:"repeat(6,1fr)",gap:10}}>
           {achievements.map(a=>(
-            <div key={a.l} style={{borderRadius:8,border:`1px solid ${a.earned?C.green+"40":C.cardBorder}`,background:a.earned?C.greenLight:C.pageGrey,padding:"12px 6px",display:"flex",flexDirection:"column",alignItems:"center",gap:4,opacity:a.earned?1:.45,filter:a.earned?"none":"grayscale(100%)",transition:"opacity .2s,filter .2s"}}>
+            <div key={a.l} onClick={()=>setSelAchievement(a)}
+              onMouseEnter={e=>{e.currentTarget.style.opacity="1";e.currentTarget.style.filter="none";e.currentTarget.style.borderColor=C.green;}}
+              onMouseLeave={e=>{e.currentTarget.style.opacity=a.earned?"1":".45";e.currentTarget.style.filter=a.earned?"none":"grayscale(100%)";e.currentTarget.style.borderColor=a.earned?C.green+"40":C.cardBorder;}}
+              style={{borderRadius:8,border:`1px solid ${a.earned?C.green+"40":C.cardBorder}`,background:a.earned?C.greenLight:C.pageGrey,padding:"12px 6px",display:"flex",flexDirection:"column",alignItems:"center",gap:4,opacity:a.earned?1:.45,filter:a.earned?"none":"grayscale(100%)",transition:"opacity .2s,filter .2s",cursor:"pointer"}}>
               <div style={{fontSize:24}}>{a.icon}</div>
               <div style={{fontSize:10,fontWeight:600,textAlign:"center",color:C.text,fontFamily:"'DM Sans',sans-serif",lineHeight:1.3}}>{a.l}</div>
               <div style={{fontSize:11,color:C.gold,fontWeight:800,fontFamily:"'Sora',sans-serif"}}>+{a.pts}</div>
-              {a.earned&&<div style={{fontSize:9,color:C.green,fontWeight:700,fontFamily:"'DM Sans',sans-serif"}}>✓ Earned</div>}
+              {a.earned?<div style={{fontSize:9,color:C.green,fontWeight:700,fontFamily:"'DM Sans',sans-serif"}}>✓ Earned</div>:<div style={{fontSize:9,color:C.textLight,fontFamily:"'DM Sans',sans-serif"}}>tap to see how</div>}
             </div>
           ))}
         </div>
       </Card>
       <SectionDivider title="Active Challenges"/>
-      <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:12}}>
-        {[{title:"Recruit 2 new partners",sub:`+300 pts · Earn ${fmtNOK(300)}`,deadline:"Apr 30",pts:300},{title:"Complete Sales Playbook",sub:`Cert + 250 pts · +${fmtNOK(cfg.certBonus)}`,deadline:"Mar 31",pts:250},{title:"Close deal > 500k NOK",sub:"Club Tickets + 400 pts",deadline:"Jun 30",pts:400}].map(ch=>(
-          <div key={ch.title} style={{background:`linear-gradient(135deg,${C.navy},#1E3A5F)`,borderRadius:8,padding:"16px 18px",border:`1px solid ${C.navyBorder}`}}>
-            <div style={{background:C.goldLight,color:"#7A4800",borderRadius:99,padding:"2px 9px",fontSize:10,fontWeight:700,display:"inline-block",marginBottom:8,fontFamily:"'DM Sans',sans-serif"}}>+{ch.pts} pts</div>
-            <div style={{fontWeight:700,color:"#fff",fontSize:13,marginBottom:3,fontFamily:"'Sora',sans-serif"}}>{ch.title}</div>
-            <div style={{fontSize:11,color:"rgba(255,255,255,.5)",marginBottom:12,fontFamily:"'DM Sans',sans-serif"}}>{ch.sub} · Ends {ch.deadline}</div>
-            <button style={{background:C.green,color:"#fff",border:"none",borderRadius:6,padding:"6px 14px",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"'DM Sans',sans-serif",width:"100%"}}>Join Challenge</button>
-          </div>
-        ))}
+      <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:12,marginBottom:16}}>
+        {CHALLENGES.map(ch=>{
+          const joined=joinedChallenges.has(ch.title);
+          return(
+            <div key={ch.title} style={{background:`linear-gradient(135deg,${C.navy},#1E3A5F)`,borderRadius:8,padding:"16px 18px",border:`1px solid ${joined?C.green:C.navyBorder}`}}>
+              <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:8,flexWrap:"wrap"}}>
+                <span style={{background:C.goldLight,color:"#7A4800",borderRadius:99,padding:"2px 9px",fontSize:10,fontWeight:700,fontFamily:"'DM Sans',sans-serif"}}>+{ch.pts} pts</span>
+                {joined&&<span style={{background:C.green,color:"#fff",borderRadius:99,padding:"2px 9px",fontSize:10,fontWeight:700,fontFamily:"'DM Sans',sans-serif"}}>✓ Joined</span>}
+              </div>
+              <div style={{fontWeight:700,color:"#fff",fontSize:13,marginBottom:3,fontFamily:"'Sora',sans-serif"}}>{ch.title}</div>
+              <div style={{fontSize:11,color:"rgba(255,255,255,.5)",marginBottom:6,fontFamily:"'DM Sans',sans-serif"}}>{ch.sub} · Ends {ch.deadline}</div>
+              <div style={{fontSize:11,color:"rgba(255,255,255,.6)",marginBottom:12,fontFamily:"'DM Sans',sans-serif",lineHeight:1.5}}>{ch.desc}</div>
+              <button onClick={()=>{if(!joined)joinChallenge(ch);}} style={{background:joined?"rgba(255,255,255,.1)":C.green,color:"#fff",border:joined?"1px solid rgba(255,255,255,.2)":"none",borderRadius:6,padding:"6px 14px",fontSize:12,fontWeight:700,cursor:joined?"default":"pointer",fontFamily:"'DM Sans',sans-serif",width:"100%",opacity:joined?.7:1}}>
+                {joined?"✓ Challenge Joined":"Join Challenge"}
+              </button>
+            </div>
+          );
+        })}
       </div>
+      {selAchievement&&(
+        <Modal title={`${selAchievement.icon} ${selAchievement.l}`} subtitle={selAchievement.earned?"Achievement earned":"Not yet earned"} onClose={()=>setSelAchievement(null)}>
+          <div style={{background:selAchievement.earned?C.greenLight:C.pageGrey,borderRadius:8,padding:"20px",marginBottom:16,border:`1px solid ${selAchievement.earned?C.green+"40":C.cardBorder}`,textAlign:"center"}}>
+            <div style={{fontSize:52,marginBottom:8}}>{selAchievement.icon}</div>
+            <div style={{fontSize:20,fontWeight:800,color:selAchievement.earned?C.green:C.text,fontFamily:"'Sora',sans-serif"}}>{selAchievement.earned?"✓ Earned!":"Locked"}</div>
+            <div style={{fontSize:15,color:C.gold,fontWeight:800,fontFamily:"'Sora',sans-serif",marginTop:4}}>+{selAchievement.pts} pts</div>
+          </div>
+          <div style={{background:C.pageGrey,borderRadius:8,padding:"14px 16px"}}>
+            <div style={{fontSize:11,fontWeight:700,color:C.textMid,textTransform:"uppercase",letterSpacing:.6,fontFamily:"'DM Sans',sans-serif",marginBottom:6}}>{selAchievement.earned?"How you earned it":"How to earn it"}</div>
+            <div style={{fontSize:13,color:C.text,fontFamily:"'DM Sans',sans-serif"}}>{selAchievement.how}</div>
+          </div>
+        </Modal>
+      )}
       {showCompare&&<TierCompareModal partner={p} onClose={()=>setShowCompare(false)}/>}
     </div>
   );
@@ -1630,7 +1729,7 @@ function App(){
           {tab==="plan"        &&<PlanSection        partner={partner} isAdmin={role==="admin"}/>}
           {tab==="enable"      &&<EnableSection       partner={partner} isAdmin={role==="admin"}/>}
           {tab==="recruit"     &&<RecruitSection      partner={partner} isAdmin={role==="admin"}/>}
-          {tab==="incentivize" &&<IncentivizeSection  partner={partner}/>}
+          {tab==="incentivize" &&<IncentivizeSection  partner={partner} isAdmin={role==="admin"}/>}
           {tab==="support"     &&<SupportSection      partner={partner} isAdmin={role==="admin"}/>}
           {tab==="analytics"   &&<AnalyticsSection    partner={partner} isAdmin={role==="admin"}/>}
         </div>
