@@ -1038,11 +1038,12 @@ const LeadTable=({leads,partner})=>{
 };
 
 /* ═══════════════════ ENABLE SECTION ═══════════════════ */
-const EnableSection=({partner})=>{
+const EnableSection=({partner,isAdmin})=>{
   const {state,dispatch}=useContext(AppCtx);
   const p=state.partners.find(x=>x.id===partner.id)||partner;
   const cfg=TIER_CONFIG[p.tier];
   const [selCourse,setSelCourse]=useState(null);
+  const [showRewards,setShowRewards]=useState(false);
   const earned=COURSES.filter(c=>p.courses.includes(c.id)).reduce((s,c)=>s+c.pts,0);
   return(
     <div>
@@ -1085,8 +1086,37 @@ const EnableSection=({partner})=>{
           <div style={{fontWeight:700,color:"#fff",fontSize:14,fontFamily:"'Sora',sans-serif"}}>🏆 Complete all courses → Gold tier + Diploma</div>
           <div style={{fontSize:12,color:"rgba(255,255,255,.65)",marginTop:3,fontFamily:"'DM Sans',sans-serif"}}>{COURSES.filter(c=>!p.courses.includes(c.id)).length} left · {COURSES.filter(c=>!p.courses.includes(c.id)).reduce((s,c)=>s+c.pts,0)} pts remaining</div>
         </div>
-        <button style={{background:"#fff",color:C.green,border:"none",borderRadius:6,padding:"8px 18px",fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"'DM Sans',sans-serif",flexShrink:0}}>View All Rewards</button>
+        <button onClick={()=>setShowRewards(true)} style={{background:"#fff",color:C.green,border:"none",borderRadius:6,padding:"8px 18px",fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"'DM Sans',sans-serif",flexShrink:0}}>View All Rewards</button>
       </div>
+      {isAdmin&&(
+        <Card noPad style={{marginTop:14}}>
+          <div style={{padding:"13px 18px",borderBottom:`1px solid ${C.cardBorder}`}}>
+            <h3 style={{margin:0,fontSize:13,fontWeight:700,color:C.text,fontFamily:"'Sora',sans-serif"}}>Training Completion — All Partners</h3>
+          </div>
+          <table style={{width:"100%",borderCollapse:"collapse"}}>
+            <thead><tr><TH ch="Partner"/><TH ch="Tier"/><TH ch="Courses Completed"/><TH ch="Certifications"/><TH ch="Points from Courses" right/></tr></thead>
+            <tbody>{state.partners.map(pp=>{
+              const ppEarned=COURSES.filter(c=>pp.courses.includes(c.id)).reduce((s,c)=>s+c.pts,0);
+              const ppCerts=COURSES.filter(c=>c.cert&&pp.courses.includes(c.id)).length;
+              const pct=Math.round((pp.courses.length/COURSES.length)*100);
+              return(
+                <tr key={pp.id} onMouseEnter={e=>e.currentTarget.style.background=C.rowHover} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+                  <td style={{padding:"10px 12px",borderBottom:`1px solid ${C.cardBorder}`,fontWeight:600,fontSize:13,color:C.text,fontFamily:"'DM Sans',sans-serif"}}>{pp.name}</td>
+                  <TD><TierBadge tier={pp.tier}/></TD>
+                  <td style={{padding:"10px 12px",borderBottom:`1px solid ${C.cardBorder}`,minWidth:180}}>
+                    <div style={{display:"flex",alignItems:"center",gap:8}}>
+                      <Bar val={pp.courses.length} max={COURSES.length} thin/>
+                      <span style={{fontSize:11,fontWeight:700,color:pct===100?C.green:C.text,fontFamily:"'Sora',sans-serif",minWidth:40}}>{pp.courses.length}/{COURSES.length}</span>
+                    </div>
+                  </td>
+                  <TD>{ppCerts>0?`🏅 ${ppCerts}`:"-"}</TD>
+                  <td style={{padding:"10px 12px",textAlign:"right",borderBottom:`1px solid ${C.cardBorder}`,fontSize:13,fontWeight:700,color:C.gold,fontFamily:"'Sora',sans-serif"}}>{ppEarned.toLocaleString()} pts</td>
+                </tr>
+              );
+            })}</tbody>
+          </table>
+        </Card>
+      )}
       {selCourse&&(()=>{
         const alreadyDone=p.courses.includes(selCourse.id);
         return(
@@ -1120,6 +1150,48 @@ const EnableSection=({partner})=>{
           </Modal>
         );
       })()}
+      {showRewards&&(
+        <Modal title="Rewards & Tier Benefits" subtitle="What you earn at each tier level" onClose={()=>setShowRewards(false)}>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10,marginBottom:20}}>
+            {TIERS.map(t=>{
+              const tc=TIER_CONFIG[t];
+              const isCurrent=t===p.tier;
+              return(
+                <div key={t} style={{borderRadius:8,border:`2px solid ${isCurrent?C.green:C.cardBorder}`,padding:"14px 12px",background:isCurrent?C.greenLight:C.pageGrey}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+                    <TierBadge tier={t}/>
+                    {isCurrent&&<span style={{fontSize:9,background:C.green,color:"#fff",borderRadius:99,padding:"1px 7px",fontWeight:700,fontFamily:"'DM Sans',sans-serif"}}>YOUR TIER</span>}
+                  </div>
+                  {[{l:"Kickback",v:`${tc.kickback}%`},{l:"Per New Client",v:`${fmtK(tc.bonusPerClient)} NOK`},{l:"Cert Bonus",v:`${fmtK(tc.certBonus)} NOK`},{l:"MDF / yr",v:tc.mdf>0?fmtNOK(tc.mdf):"—"}].map(r=>(
+                    <div key={r.l} style={{display:"flex",justifyContent:"space-between",padding:"4px 0",borderBottom:`1px solid ${C.cardBorder}`}}>
+                      <span style={{fontSize:11,color:C.textMid,fontFamily:"'DM Sans',sans-serif"}}>{r.l}</span>
+                      <span style={{fontSize:11,fontWeight:700,color:C.text,fontFamily:"'Sora',sans-serif"}}>{r.v}</span>
+                    </div>
+                  ))}
+                  <div style={{marginTop:8,fontSize:10,color:C.textLight,fontFamily:"'DM Sans',sans-serif"}}>{tc.pointsMin.toLocaleString()}+ pts required</div>
+                </div>
+              );
+            })}
+          </div>
+          <div style={{fontWeight:700,fontSize:12,color:C.text,fontFamily:"'Sora',sans-serif",marginBottom:10}}>Points available from courses</div>
+          {COURSES.map((c,i)=>{
+            const done=p.courses.includes(c.id);
+            return(
+              <div key={c.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"9px 0",borderBottom:i<COURSES.length-1?`1px solid ${C.cardBorder}`:"none",opacity:done?.6:1}}>
+                <div style={{display:"flex",alignItems:"center",gap:8}}>
+                  <span>{done?"✅":"📖"}</span>
+                  <span style={{fontSize:13,fontWeight:600,color:C.text,fontFamily:"'DM Sans',sans-serif"}}>{c.title}</span>
+                  {c.cert&&<span style={{fontSize:10,color:C.gold,fontWeight:700,fontFamily:"'DM Sans',sans-serif"}}>🏅 cert</span>}
+                </div>
+                <div style={{display:"flex",gap:8,alignItems:"center"}}>
+                  {c.cert&&<span style={{fontSize:11,color:C.textMid,fontFamily:"'DM Sans',sans-serif"}}>+{fmtK(cfg.certBonus)} NOK bonus</span>}
+                  <span style={{background:done?C.pageGrey:C.goldLight,color:done?C.textLight:"#7A4800",borderRadius:99,padding:"2px 8px",fontSize:10,fontWeight:700,fontFamily:"'DM Sans',sans-serif"}}>{done?"earned":"+"+c.pts+" pts"}</span>
+                </div>
+              </div>
+            );
+          })}
+        </Modal>
+      )}
     </div>
   );
 };
@@ -1520,7 +1592,7 @@ function App(){
         {/* CONTENT */}
         <div style={{maxWidth:1280,margin:"0 auto",padding:"22px 28px"}}>
           {tab==="plan"        &&<PlanSection        partner={partner} isAdmin={role==="admin"}/>}
-          {tab==="enable"      &&<EnableSection       partner={partner}/>}
+          {tab==="enable"      &&<EnableSection       partner={partner} isAdmin={role==="admin"}/>}
           {tab==="recruit"     &&<RecruitSection      partner={partner} isAdmin={role==="admin"}/>}
           {tab==="incentivize" &&<IncentivizeSection  partner={partner}/>}
           {tab==="support"     &&<SupportSection      partner={partner} isAdmin={role==="admin"}/>}
