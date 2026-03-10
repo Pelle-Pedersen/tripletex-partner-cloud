@@ -1200,19 +1200,35 @@ const EnableSection=({partner,isAdmin})=>{
 const RecruitSection=({partner,isAdmin})=>{
   const {state,dispatch}=useContext(AppCtx);
   const [open,setOpen]=useState(false);
+  const [statusFilter,setStatusFilter]=useState(null);
   const [form,setForm]=useState({company:"",type:"New Client",size:"Medium",value:"",notes:""});
   const set=k=>e=>setForm(f=>({...f,[k]:e.target.value}));
   const myLeads=isAdmin?state.leads:state.leads.filter(l=>l.partnerId===partner.id);
+  const filteredLeads=statusFilter?myLeads.filter(l=>l.status===statusFilter):myLeads;
   const cfg=TIER_CONFIG[partner.tier];
   const totalVal=myLeads.reduce((s,l)=>s+l.value,0);
   const wonVal=myLeads.filter(l=>l.status==="Closed Won").reduce((s,l)=>s+l.value,0);
+  const exportLeads=()=>{
+    const rows=[
+      ["Company","Type","Status","Size","Value (NOK)","Date","Partner","Notes"],
+      ...myLeads.map(l=>{
+        const pName=state.partners.find(p=>p.id===l.partnerId)?.name||"";
+        return[l.company,l.type,l.status,l.size,l.value,l.date,pName,l.notes||""];
+      })
+    ];
+    const csv=rows.map(r=>r.map(v=>`"${v}"`).join(",")).join("\n");
+    const blob=new Blob([csv],{type:"text/csv"});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement("a");a.href=url;a.download="leads-export.csv";a.click();URL.revokeObjectURL(url);
+  };
+  const toggleFilter=s=>setStatusFilter(f=>f===s?null:s);
   return(
     <div>
       <div style={{display:"flex",gap:10,marginBottom:18,flexWrap:"wrap"}}>
-        <Metric label="Total Leads" value={myLeads.length} icon="📋"/>
-        <Metric label="In Progress" value={myLeads.filter(l=>l.status==="In Progress").length} icon="🔵"/>
-        <Metric label="Qualified" value={myLeads.filter(l=>l.status==="Qualified").length} icon="✅" accent/>
-        <Metric label="Closed Won" value={myLeads.filter(l=>l.status==="Closed Won").length} sub={`+${cfg.leadBonus} NOK/win`} icon="🎯" accent/>
+        <Metric label="Total Leads" value={myLeads.length} icon="📋" onClick={()=>setStatusFilter(null)} active={!statusFilter}/>
+        <Metric label="In Progress" value={myLeads.filter(l=>l.status==="In Progress").length} icon="🔵" onClick={()=>toggleFilter("In Progress")} active={statusFilter==="In Progress"}/>
+        <Metric label="Qualified" value={myLeads.filter(l=>l.status==="Qualified").length} icon="✅" accent onClick={()=>toggleFilter("Qualified")} active={statusFilter==="Qualified"}/>
+        <Metric label="Closed Won" value={myLeads.filter(l=>l.status==="Closed Won").length} sub={`+${cfg.leadBonus} NOK/win`} icon="🎯" accent onClick={()=>toggleFilter("Closed Won")} active={statusFilter==="Closed Won"}/>
         <Metric label="Pipeline Value" value={fmtNOK(totalVal)} sub={`Won: ${fmtNOK(wonVal)}`} icon="💰" accent/>
       </div>
       {!isAdmin&&(
@@ -1239,10 +1255,13 @@ const RecruitSection=({partner,isAdmin})=>{
       )}
       <Card noPad>
         <div style={{padding:"13px 18px",borderBottom:`1px solid ${C.cardBorder}`,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-          <h3 style={{margin:0,fontSize:13,fontWeight:700,color:C.text,fontFamily:"'Sora',sans-serif"}}>Lead Pipeline</h3>
-          {isAdmin&&<BtnG ch="Export" small/>}
+          <div style={{display:"flex",alignItems:"center",gap:8}}>
+            <h3 style={{margin:0,fontSize:13,fontWeight:700,color:C.text,fontFamily:"'Sora',sans-serif"}}>Lead Pipeline</h3>
+            {statusFilter&&<span style={{fontSize:10,background:C.greenLight,color:C.greenDark,border:`1px solid ${C.green}40`,borderRadius:99,padding:"1px 8px",fontWeight:700,fontFamily:"'DM Sans',sans-serif",cursor:"pointer"}} onClick={()=>setStatusFilter(null)}>Filtered: {statusFilter} ✕</span>}
+          </div>
+          {isAdmin&&<BtnG ch="Export CSV" small onClick={exportLeads}/>}
         </div>
-        <LeadTable leads={myLeads} partner={partner}/>
+        <LeadTable leads={filteredLeads} partner={partner}/>
       </Card>
     </div>
   );
