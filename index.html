@@ -24,7 +24,7 @@
 <body>
 <div id="gate">
   <div class="box">
-    <div class="logo">Tripletex</div>
+    <img src="Tripletex logo Transparent.png" alt="Tripletex" style="height:44px;display:block;margin:0 auto 20px;"/>
     <h2>Partner Cloud Demo</h2>
     <p>Enter the access password to continue.</p>
     <input type="password" id="pw" placeholder="Password" onkeydown="if(event.key==='Enter')checkPw()"/>
@@ -617,8 +617,9 @@ const TierCompareModal=({partner,onClose})=>{
 };
 
 /* ═══════════════════ PARTNER PROFILE MODAL (admin) ═══════════════════ */
-const PartnerProfileModal=({partner,onClose,onNavigate,onEditTargets})=>{
-  const {state}=useContext(AppCtx);
+const PartnerProfileModal=({partner,onClose,onEditTargets})=>{
+  const {state,setTab}=useContext(AppCtx);
+  const onNavigate=v=>{const m={"clients":"plan","leads":"recruit","cases":"support"};if(setTab)setTab(m[v]||v);};
   const customers=state.customers[partner.id]||[];
   const leads=state.leads.filter(l=>l.partnerId===partner.id);
   const cases=state.cases.filter(c=>c.partnerId===partner.id);
@@ -828,53 +829,100 @@ const PlanSection=({partner,isAdmin})=>{
         </div>
       </Card>
       {/* Quarterly Årshjul */}
-      <Card noPad style={{marginBottom:14}}>
-        <div style={{padding:"13px 18px",borderBottom:`1px solid ${C.cardBorder}`,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-          <h3 style={{margin:0,fontSize:13,fontWeight:700,color:C.text,fontFamily:"'Sora',sans-serif"}}>Quarterly Breakdown — Årshjul 2025</h3>
-          <span style={{fontSize:11,color:C.textMid,fontFamily:"'DM Sans',sans-serif"}}>Q1 active · targets split evenly per quarter</span>
-        </div>
-        <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)"}}>
-          {[1,2,3,4].map(q=>{
-            const months=[(q-1)*3+1,(q-1)*3+2,(q-1)*3+3];
-            const qCust=customers.filter(c=>months.includes(parseInt(c.added.split('-')[1]))&&c.added.startsWith("2025"));
-            const qLeads=leads.filter(l=>months.includes(parseInt(l.date.split('-')[1]))&&l.date.startsWith("2025"));
-            const qWins=qLeads.filter(l=>l.status==="Closed Won").length;
-            const qClTarget=Math.max(1,Math.round(resolvedTargets.clients/4));
-            const qLeadTarget=Math.max(1,Math.round(resolvedTargets.leads/4));
-            const qNames=["Jan – Mar","Apr – Jun","Jul – Sep","Oct – Dec"];
-            const isCurrent=q===1;
-            return(
-              <div key={q} style={{padding:"16px 14px",borderRight:q<4?`1px solid ${C.cardBorder}`:"none",background:isCurrent?C.greenLight:"transparent",transition:"background .2s",cursor:"pointer"}}
-                onClick={()=>setSelQ({q,months,qCust,qLeads,qWins,qClTarget,qLeadTarget,qNames,isCurrent})}
-                onMouseEnter={e=>e.currentTarget.style.background=isCurrent?"#d4f0e6":C.rowHover}
-                onMouseLeave={e=>e.currentTarget.style.background=isCurrent?C.greenLight:"transparent"}>
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
-                  <span style={{fontSize:13,fontWeight:800,color:isCurrent?C.green:C.textMid,fontFamily:"'Sora',sans-serif"}}>Q{q}</span>
-                  {isCurrent&&<span style={{fontSize:9,background:C.green,color:"#fff",borderRadius:99,padding:"1px 7px",fontWeight:700,fontFamily:"'DM Sans',sans-serif"}}>NOW</span>}
-                  {q>1&&<span style={{fontSize:9,color:C.textLight,fontFamily:"'DM Sans',sans-serif"}}>{q===2?"Upcoming":"Planned"}</span>}
-                </div>
-                <div style={{fontSize:10,color:C.textLight,fontFamily:"'DM Sans',sans-serif",marginBottom:12}}>{qNames[q-1]}</div>
-                {[
-                  {icon:"👥",label:"Clients",curr:qCust.length,target:qClTarget},
-                  {icon:"📋",label:"Leads",curr:qLeads.length,target:qLeadTarget},
-                  {icon:"🎯",label:"Won",curr:qWins,target:Math.max(1,Math.round(resolvedTargets.leads/8))},
-                ].map(m=>(
-                  <div key={m.label} style={{marginBottom:9}}>
-                    <div style={{display:"flex",justifyContent:"space-between",marginBottom:3}}>
-                      <span style={{fontSize:10,color:C.textMid,fontFamily:"'DM Sans',sans-serif"}}>{m.icon} {m.label}</span>
-                      <span style={{fontSize:10,fontWeight:700,color:m.curr>=m.target?C.green:C.text,fontFamily:"'Sora',sans-serif"}}>{m.curr}/{m.target}</span>
-                    </div>
-                    <Bar val={m.curr} max={m.target} thin/>
+      {isAdmin?(
+        <Card noPad style={{marginBottom:14}}>
+          <div style={{padding:"13px 18px",borderBottom:`1px solid ${C.cardBorder}`,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+            <h3 style={{margin:0,fontSize:13,fontWeight:700,color:C.text,fontFamily:"'Sora',sans-serif"}}>Quarterly Portfolio Activity — Årshjul 2025</h3>
+            <span style={{fontSize:11,color:C.textMid,fontFamily:"'DM Sans',sans-serif"}}>All partners combined</span>
+          </div>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)"}}>
+            {[1,2,3,4].map(q=>{
+              const months=[(q-1)*3+1,(q-1)*3+2,(q-1)*3+3];
+              const qNames=["Jan – Mar","Apr – Jun","Jul – Sep","Oct – Dec"];
+              const isCurrent=q===1;
+              const allLeads=state.leads;
+              const allCustomers=Object.values(state.customers).flat();
+              const qCust=allCustomers.filter(c=>months.includes(parseInt(c.added.split('-')[1]))&&c.added.startsWith("2025"));
+              const qLeads=allLeads.filter(l=>months.includes(parseInt(l.date.split('-')[1]))&&l.date.startsWith("2025"));
+              const qWins=qLeads.filter(l=>l.status==="Closed Won").length;
+              const qKB=qLeads.filter(l=>l.status==="Closed Won").reduce((s,l)=>{const pp=state.partners.find(p=>p.id===l.partnerId);return s+(pp?Math.round(l.value*(TIER_CONFIG[pp.tier].kickback/100)):0);},0);
+              return(
+                <div key={q} style={{padding:"16px 14px",borderRight:q<4?`1px solid ${C.cardBorder}`:"none",background:isCurrent?C.greenLight:"transparent",transition:"background .2s",cursor:"pointer"}}
+                  onClick={()=>setSelQ({q,months,qCust,qLeads,qWins,qClTarget:Math.max(1,Math.round(state.partners.length*3)),qLeadTarget:Math.max(1,Math.round(state.leads.length/4)),qNames,isCurrent})}
+                  onMouseEnter={e=>e.currentTarget.style.background=isCurrent?"#d4f0e6":C.rowHover}
+                  onMouseLeave={e=>e.currentTarget.style.background=isCurrent?C.greenLight:"transparent"}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
+                    <span style={{fontSize:13,fontWeight:800,color:isCurrent?C.green:C.textMid,fontFamily:"'Sora',sans-serif"}}>Q{q}</span>
+                    {isCurrent&&<span style={{fontSize:9,background:C.green,color:"#fff",borderRadius:99,padding:"1px 7px",fontWeight:700,fontFamily:"'DM Sans',sans-serif"}}>NOW</span>}
+                    {q>1&&<span style={{fontSize:9,color:C.textLight,fontFamily:"'DM Sans',sans-serif"}}>{q===2?"Upcoming":"Planned"}</span>}
                   </div>
-                ))}
-                <div style={{marginTop:10,fontSize:10,fontWeight:600,color:isCurrent?C.green:C.textLight,fontFamily:"'DM Sans',sans-serif"}}>
-                  {isCurrent?"● Active":q>1?"○ Not started yet":""}
+                  <div style={{fontSize:10,color:C.textLight,fontFamily:"'DM Sans',sans-serif",marginBottom:12}}>{qNames[q-1]}</div>
+                  {[
+                    {icon:"👥",label:"Clients",curr:qCust.length},
+                    {icon:"📋",label:"Leads",curr:qLeads.length},
+                    {icon:"🎯",label:"Wins",curr:qWins},
+                  ].map(m=>(
+                    <div key={m.label} style={{marginBottom:9}}>
+                      <div style={{display:"flex",justifyContent:"space-between",marginBottom:3}}>
+                        <span style={{fontSize:10,color:C.textMid,fontFamily:"'DM Sans',sans-serif"}}>{m.icon} {m.label}</span>
+                        <span style={{fontSize:11,fontWeight:700,color:m.curr>0?C.green:C.text,fontFamily:"'Sora',sans-serif"}}>{m.curr}</span>
+                      </div>
+                    </div>
+                  ))}
+                  {isCurrent&&qKB>0&&<div style={{marginTop:4,fontSize:10,fontWeight:700,color:C.green,fontFamily:"'DM Sans',sans-serif"}}>💸 {fmtNOK(qKB)} commission</div>}
+                  <div style={{marginTop:6,fontSize:10,fontWeight:600,color:isCurrent?C.green:C.textLight,fontFamily:"'DM Sans',sans-serif"}}>{isCurrent?"● Active":q>1?"○ Not started yet":""}</div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
-      </Card>
+              );
+            })}
+          </div>
+        </Card>
+      ):(
+        <Card noPad style={{marginBottom:14}}>
+          <div style={{padding:"13px 18px",borderBottom:`1px solid ${C.cardBorder}`,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+            <h3 style={{margin:0,fontSize:13,fontWeight:700,color:C.text,fontFamily:"'Sora',sans-serif"}}>Quarterly Breakdown — Årshjul 2025</h3>
+            <span style={{fontSize:11,color:C.textMid,fontFamily:"'DM Sans',sans-serif"}}>Q1 active · targets split evenly per quarter</span>
+          </div>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)"}}>
+            {[1,2,3,4].map(q=>{
+              const months=[(q-1)*3+1,(q-1)*3+2,(q-1)*3+3];
+              const qCust=customers.filter(c=>months.includes(parseInt(c.added.split('-')[1]))&&c.added.startsWith("2025"));
+              const qLeads=leads.filter(l=>months.includes(parseInt(l.date.split('-')[1]))&&l.date.startsWith("2025"));
+              const qWins=qLeads.filter(l=>l.status==="Closed Won").length;
+              const qClTarget=Math.max(1,Math.round(resolvedTargets.clients/4));
+              const qLeadTarget=Math.max(1,Math.round(resolvedTargets.leads/4));
+              const qNames=["Jan – Mar","Apr – Jun","Jul – Sep","Oct – Dec"];
+              const isCurrent=q===1;
+              return(
+                <div key={q} style={{padding:"16px 14px",borderRight:q<4?`1px solid ${C.cardBorder}`:"none",background:isCurrent?C.greenLight:"transparent",transition:"background .2s",cursor:"pointer"}}
+                  onClick={()=>setSelQ({q,months,qCust,qLeads,qWins,qClTarget,qLeadTarget,qNames,isCurrent})}
+                  onMouseEnter={e=>e.currentTarget.style.background=isCurrent?"#d4f0e6":C.rowHover}
+                  onMouseLeave={e=>e.currentTarget.style.background=isCurrent?C.greenLight:"transparent"}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
+                    <span style={{fontSize:13,fontWeight:800,color:isCurrent?C.green:C.textMid,fontFamily:"'Sora',sans-serif"}}>Q{q}</span>
+                    {isCurrent&&<span style={{fontSize:9,background:C.green,color:"#fff",borderRadius:99,padding:"1px 7px",fontWeight:700,fontFamily:"'DM Sans',sans-serif"}}>NOW</span>}
+                    {q>1&&<span style={{fontSize:9,color:C.textLight,fontFamily:"'DM Sans',sans-serif"}}>{q===2?"Upcoming":"Planned"}</span>}
+                  </div>
+                  <div style={{fontSize:10,color:C.textLight,fontFamily:"'DM Sans',sans-serif",marginBottom:12}}>{qNames[q-1]}</div>
+                  {[
+                    {icon:"👥",label:"Clients",curr:qCust.length,target:qClTarget},
+                    {icon:"📋",label:"Leads",curr:qLeads.length,target:qLeadTarget},
+                    {icon:"🎯",label:"Won",curr:qWins,target:Math.max(1,Math.round(resolvedTargets.leads/8))},
+                  ].map(m=>(
+                    <div key={m.label} style={{marginBottom:9}}>
+                      <div style={{display:"flex",justifyContent:"space-between",marginBottom:3}}>
+                        <span style={{fontSize:10,color:C.textMid,fontFamily:"'DM Sans',sans-serif"}}>{m.icon} {m.label}</span>
+                        <span style={{fontSize:10,fontWeight:700,color:m.curr>=m.target?C.green:C.text,fontFamily:"'Sora',sans-serif"}}>{m.curr}/{m.target}</span>
+                      </div>
+                      <Bar val={m.curr} max={m.target} thin/>
+                    </div>
+                  ))}
+                  <div style={{marginTop:10,fontSize:10,fontWeight:600,color:isCurrent?C.green:C.textLight,fontFamily:"'DM Sans',sans-serif"}}>{isCurrent?"● Active":q>1?"○ Not started yet":""}</div>
+                </div>
+              );
+            })}
+          </div>
+        </Card>
+      )}
       {/* Admin: all partners table */}
       {isAdmin&&(
         <Card noPad>
@@ -1037,7 +1085,7 @@ const PlanSection=({partner,isAdmin})=>{
           </Modal>
         );
       })()}
-      {selPartner&&<PartnerProfileModal partner={selPartner} onClose={()=>setSelPartner(null)} onNavigate={(view)=>console.log(view)} onEditTargets={p=>setEditGoalsPartner(p)}/>}
+      {selPartner&&<PartnerProfileModal partner={selPartner} onClose={()=>setSelPartner(null)} onEditTargets={p=>setEditGoalsPartner(p)}/>}
       {editGoalsPartner&&<GoalEditModal partner={editGoalsPartner} onClose={()=>setEditGoalsPartner(null)}/>}
     </div>
   );
@@ -1094,52 +1142,165 @@ const EnableSection=({partner,isAdmin})=>{
   const [selCourse,setSelCourse]=useState(null);
   const [showRewards,setShowRewards]=useState(false);
   const [selPartnerEnable,setSelPartnerEnable]=useState(null);
+  const [metricModal,setMetricModal]=useState(null);
   const earned=COURSES.filter(c=>p.courses.includes(c.id)).reduce((s,c)=>s+c.pts,0);
-  return(
-    <div>
-      <div style={{display:"flex",gap:10,marginBottom:18,flexWrap:"wrap"}}>
-        <Metric label="Completed" value={`${p.courses.length}/${COURSES.length}`} icon="✅" accent/>
-        <Metric label="Points Earned" value={earned.toLocaleString()} sub="from courses" icon="⭐" accent/>
-        <Metric label="Certifications" value={COURSES.filter(c=>c.cert&&p.courses.includes(c.id)).length} icon="🏅"/>
-        <Metric label="Cert Bonus" value={`${fmtK(cfg.certBonus)} NOK`} sub="per certificate" icon="💰"/>
-        <Metric label="Remaining" value={COURSES.filter(c=>!p.courses.includes(c.id)).reduce((s,c)=>s+c.pts,0)} sub="pts available" icon="📈"/>
+  // Portfolio stats for admin
+  const allStats=state.partners.map(pp=>({...pp,earned:COURSES.filter(c=>pp.courses.includes(c.id)).reduce((s,c)=>s+c.pts,0),certs:COURSES.filter(c=>c.cert&&pp.courses.includes(c.id)).length,pct:Math.round((pp.courses.length/COURSES.length)*100)}));
+  const avgPct=Math.round(allStats.reduce((s,pp)=>s+pp.pct,0)/state.partners.length);
+  const totalCerts=state.partners.filter(pp=>pp.certified).length;
+  const allDone=state.partners.filter(pp=>pp.courses.length===COURSES.length).length;
+  const totalPtsEarned=allStats.reduce((s,pp)=>s+pp.earned,0);
+  const courseList=(
+    <Card noPad style={{marginBottom:14}}>
+      <div style={{padding:"13px 18px",borderBottom:`1px solid ${C.cardBorder}`,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+        <h3 style={{margin:0,fontSize:13,fontWeight:700,color:C.text,fontFamily:"'Sora',sans-serif"}}>Learning Paths</h3>
+        <span style={{fontSize:11,color:C.textMid,fontFamily:"'DM Sans',sans-serif"}}>Complete all → Gold tier + Diploma 🎓</span>
       </div>
-      <Card noPad style={{marginBottom:14}}>
-        <div style={{padding:"13px 18px",borderBottom:`1px solid ${C.cardBorder}`,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-          <h3 style={{margin:0,fontSize:13,fontWeight:700,color:C.text,fontFamily:"'Sora',sans-serif"}}>Learning Paths</h3>
-          <span style={{fontSize:11,color:C.textMid,fontFamily:"'DM Sans',sans-serif"}}>Complete all → Gold tier + Diploma 🎓</span>
+      {COURSES.map((c,i)=>{
+        const done=p.courses.includes(c.id);
+        return(
+          <div key={c.id} style={{padding:"14px 18px",display:"flex",alignItems:"center",gap:14,justifyContent:"space-between",borderBottom:i<COURSES.length-1?`1px solid ${C.cardBorder}`:"none",background:done?"#FAFFFE":C.white,cursor:"pointer",transition:"background .1s"}}
+            onClick={()=>setSelCourse(c)}
+            onMouseEnter={e=>e.currentTarget.style.background=C.rowHover}
+            onMouseLeave={e=>e.currentTarget.style.background=done?"#FAFFFE":C.white}>
+            <div style={{display:"flex",alignItems:"center",gap:12}}>
+              <div style={{width:36,height:36,borderRadius:8,background:done?C.greenLight:C.pageGrey,display:"flex",alignItems:"center",justifyContent:"center",fontSize:17,flexShrink:0}}>{done?"✅":"📖"}</div>
+              <div>
+                <div style={{fontWeight:600,fontSize:13,color:C.text,fontFamily:"'DM Sans',sans-serif"}}>{c.title}</div>
+                <div style={{fontSize:11,color:C.textMid,marginTop:1,fontFamily:"'DM Sans',sans-serif"}}>{c.dur}{c.cert?` · 🏅 +${fmtK(cfg.certBonus)} NOK cert bonus`:""}</div>
+              </div>
+            </div>
+            <div style={{display:"flex",alignItems:"center",gap:10}}>
+              <span style={{background:C.goldLight,color:"#7A4800",borderRadius:99,padding:"2px 8px",fontSize:10,fontWeight:700,fontFamily:"'DM Sans',sans-serif"}}>+{c.pts} pts</span>
+              {done?<span style={{fontSize:12,color:C.green,fontWeight:700,fontFamily:"'DM Sans',sans-serif"}}>Completed ✓</span>:<BtnG ch="Start →" small onClick={e=>{e.stopPropagation();setSelCourse(c);}}/>}
+            </div>
+          </div>
+        );
+      })}
+    </Card>
+  );
+  const promoBanner=(
+    <div style={{background:`linear-gradient(110deg,${C.greenDeep},${C.green})`,borderRadius:8,padding:"16px 22px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+      <div>
+        <div style={{fontWeight:700,color:"#fff",fontSize:14,fontFamily:"'Sora',sans-serif"}}>🏆 Complete all courses → Gold tier + Diploma</div>
+        <div style={{fontSize:12,color:"rgba(255,255,255,.65)",marginTop:3,fontFamily:"'DM Sans',sans-serif"}}>{COURSES.filter(c=>!p.courses.includes(c.id)).length} left · {COURSES.filter(c=>!p.courses.includes(c.id)).reduce((s,c)=>s+c.pts,0)} pts remaining</div>
+      </div>
+      <button onClick={()=>setShowRewards(true)} style={{background:"#fff",color:C.green,border:"none",borderRadius:6,padding:"8px 18px",fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"'DM Sans',sans-serif",flexShrink:0}}>View All Rewards</button>
+    </div>
+  );
+  const courseModal=selCourse&&(()=>{
+    const alreadyDone=p.courses.includes(selCourse.id);
+    return(
+      <Modal title={selCourse.title} subtitle={`${selCourse.dur} · +${selCourse.pts} pts${selCourse.cert?` · 🏅 +${fmtK(cfg.certBonus)} NOK cert bonus`:""}`} onClose={()=>setSelCourse(null)}>
+        {alreadyDone&&(
+          <div style={{background:C.greenLight,border:`1px solid ${C.green}40`,borderRadius:8,padding:"14px 16px",marginBottom:16,display:"flex",alignItems:"center",gap:10}}>
+            <div style={{fontSize:28}}>✅</div>
+            <div>
+              <div style={{fontWeight:700,fontSize:13,color:C.greenDark,fontFamily:"'Sora',sans-serif"}}>Course Completed</div>
+              <div style={{fontSize:12,color:C.green,fontFamily:"'DM Sans',sans-serif",marginTop:2}}>+{selCourse.pts} pts earned{selCourse.cert?` · 🏅 Certificate + ${fmtK(cfg.certBonus)} NOK bonus`:""}</div>
+            </div>
+          </div>
+        )}
+        <div style={{background:C.pageGrey,borderRadius:8,padding:"14px 16px",marginBottom:16}}>
+          <div style={{fontSize:13,color:C.text,fontFamily:"'DM Sans',sans-serif"}}>{selCourse.desc}</div>
         </div>
-        {COURSES.map((c,i)=>{
-          const done=p.courses.includes(c.id);
+        {!alreadyDone&&(
+          <div style={{background:C.greenLight,borderRadius:8,padding:"12px 14px",marginBottom:16,border:`1px solid ${C.greenMid}`}}>
+            <div style={{fontSize:12,color:C.greenDark,fontFamily:"'DM Sans',sans-serif"}}>✓ Earn <strong>+{selCourse.pts} pts</strong> on completion{selCourse.cert&&<> · 🏅 Certificate + <strong>+{fmtK(cfg.certBonus)} NOK</strong> bonus</>}</div>
+          </div>
+        )}
+        {alreadyDone?<BtnP ch="Already Completed ✓" full disabled/>:<BtnP ch={`Complete Course (+${selCourse.pts} pts)`} full onClick={()=>{dispatch({type:"COMPLETE_COURSE",partnerId:p.id,courseId:selCourse.id});setSelCourse(null);}}/>}
+      </Modal>
+    );
+  })();
+  const rewardsModal=showRewards&&(
+    <Modal title="Rewards & Tier Benefits" subtitle="What you earn at each tier level" onClose={()=>setShowRewards(false)}>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10,marginBottom:20}}>
+        {TIERS.map(t=>{
+          const tc=TIER_CONFIG[t];const isCurrent=t===p.tier;
           return(
-            <div key={c.id} style={{padding:"14px 18px",display:"flex",alignItems:"center",gap:14,justifyContent:"space-between",borderBottom:i<COURSES.length-1?`1px solid ${C.cardBorder}`:"none",background:done?"#FAFFFE":C.white,cursor:"pointer",transition:"background .1s"}}
-              onClick={()=>setSelCourse(c)}
-              onMouseEnter={e=>e.currentTarget.style.background=C.rowHover}
-              onMouseLeave={e=>e.currentTarget.style.background=done?"#FAFFFE":C.white}>
-              <div style={{display:"flex",alignItems:"center",gap:12}}>
-                <div style={{width:36,height:36,borderRadius:8,background:done?C.greenLight:C.pageGrey,display:"flex",alignItems:"center",justifyContent:"center",fontSize:17,flexShrink:0}}>{done?"✅":"📖"}</div>
-                <div>
-                  <div style={{fontWeight:600,fontSize:13,color:C.text,fontFamily:"'DM Sans',sans-serif"}}>{c.title}</div>
-                  <div style={{fontSize:11,color:C.textMid,marginTop:1,fontFamily:"'DM Sans',sans-serif"}}>{c.dur}{c.cert?` · 🏅 +${fmtK(cfg.certBonus)} NOK cert bonus`:""}</div>
+            <div key={t} style={{borderRadius:8,border:`2px solid ${isCurrent?C.green:C.cardBorder}`,padding:"14px 12px",background:isCurrent?C.greenLight:C.pageGrey}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+                <TierBadge tier={t}/>
+                {isCurrent&&<span style={{fontSize:9,background:C.green,color:"#fff",borderRadius:99,padding:"1px 7px",fontWeight:700,fontFamily:"'DM Sans',sans-serif"}}>YOUR TIER</span>}
+              </div>
+              {[{l:"Kickback",v:`${tc.kickback}%`},{l:"Per New Client",v:`${fmtK(tc.bonusPerClient)} NOK`},{l:"Cert Bonus",v:`${fmtK(tc.certBonus)} NOK`},{l:"MDF / yr",v:tc.mdf>0?fmtNOK(tc.mdf):"—"}].map(r=>(
+                <div key={r.l} style={{display:"flex",justifyContent:"space-between",padding:"4px 0",borderBottom:`1px solid ${C.cardBorder}`}}>
+                  <span style={{fontSize:11,color:C.textMid,fontFamily:"'DM Sans',sans-serif"}}>{r.l}</span>
+                  <span style={{fontSize:11,fontWeight:700,color:C.text,fontFamily:"'Sora',sans-serif"}}>{r.v}</span>
                 </div>
-              </div>
-              <div style={{display:"flex",alignItems:"center",gap:10}}>
-                <span style={{background:C.goldLight,color:"#7A4800",borderRadius:99,padding:"2px 8px",fontSize:10,fontWeight:700,fontFamily:"'DM Sans',sans-serif"}}>+{c.pts} pts</span>
-                {done?<span style={{fontSize:12,color:C.green,fontWeight:700,fontFamily:"'DM Sans',sans-serif"}}>Completed ✓</span>:<BtnG ch="Start →" small onClick={()=>setSelCourse(c)}/>}
-              </div>
+              ))}
+              <div style={{marginTop:8,fontSize:10,color:C.textLight,fontFamily:"'DM Sans',sans-serif"}}>{tc.pointsMin.toLocaleString()}+ pts required</div>
             </div>
           );
         })}
-      </Card>
-      <div style={{background:`linear-gradient(110deg,${C.greenDeep},${C.green})`,borderRadius:8,padding:"16px 22px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-        <div>
-          <div style={{fontWeight:700,color:"#fff",fontSize:14,fontFamily:"'Sora',sans-serif"}}>🏆 Complete all courses → Gold tier + Diploma</div>
-          <div style={{fontSize:12,color:"rgba(255,255,255,.65)",marginTop:3,fontFamily:"'DM Sans',sans-serif"}}>{COURSES.filter(c=>!p.courses.includes(c.id)).length} left · {COURSES.filter(c=>!p.courses.includes(c.id)).reduce((s,c)=>s+c.pts,0)} pts remaining</div>
-        </div>
-        <button onClick={()=>setShowRewards(true)} style={{background:"#fff",color:C.green,border:"none",borderRadius:6,padding:"8px 18px",fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"'DM Sans',sans-serif",flexShrink:0}}>View All Rewards</button>
       </div>
-      {isAdmin&&(
-        <Card noPad style={{marginTop:14}}>
+      <div style={{fontWeight:700,fontSize:12,color:C.text,fontFamily:"'Sora',sans-serif",marginBottom:10}}>Points available from courses</div>
+      {COURSES.map((c,i)=>{
+        const done=p.courses.includes(c.id);
+        return(
+          <div key={c.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"9px 0",borderBottom:i<COURSES.length-1?`1px solid ${C.cardBorder}`:"none",opacity:done?.6:1}}>
+            <div style={{display:"flex",alignItems:"center",gap:8}}>
+              <span>{done?"✅":"📖"}</span>
+              <span style={{fontSize:13,fontWeight:600,color:C.text,fontFamily:"'DM Sans',sans-serif"}}>{c.title}</span>
+              {c.cert&&<span style={{fontSize:10,color:C.gold,fontWeight:700,fontFamily:"'DM Sans',sans-serif"}}>🏅 cert</span>}
+            </div>
+            <div style={{display:"flex",gap:8,alignItems:"center"}}>
+              {c.cert&&<span style={{fontSize:11,color:C.textMid,fontFamily:"'DM Sans',sans-serif"}}>+{fmtK(cfg.certBonus)} NOK bonus</span>}
+              <span style={{background:done?C.pageGrey:C.goldLight,color:done?C.textLight:"#7A4800",borderRadius:99,padding:"2px 8px",fontSize:10,fontWeight:700,fontFamily:"'DM Sans',sans-serif"}}>{done?"earned":"+"+c.pts+" pts"}</span>
+            </div>
+          </div>
+        );
+      })}
+    </Modal>
+  );
+  const partnerDrillModal=selPartnerEnable&&(()=>{
+    const pp=selPartnerEnable;const ppCfg=TIER_CONFIG[pp.tier];
+    const ppEarned=COURSES.filter(c=>pp.courses.includes(c.id)).reduce((s,c)=>s+c.pts,0);
+    const ppCerts=COURSES.filter(c=>c.cert&&pp.courses.includes(c.id)).length;
+    return(
+      <Modal title={`${pp.name} — Training Detail`} subtitle={`${pp.tier} tier · ${pp.courses.length}/${COURSES.length} courses · ${ppEarned} pts from training`} onClose={()=>setSelPartnerEnable(null)}>
+        <div style={{display:"flex",gap:8,marginBottom:16}}>
+          {[{l:"Completed",v:`${pp.courses.length}/${COURSES.length}`,a:true},{l:"Certifications",v:`🏅 ${ppCerts}`},{l:"Points from Courses",v:`${ppEarned} pts`,a:true},{l:"Remaining",v:`${COURSES.filter(c=>!pp.courses.includes(c.id)).reduce((s,c)=>s+c.pts,0)} pts`}].map(r=>(
+            <div key={r.l} style={{flex:1,background:r.a?C.greenLight:C.pageGrey,borderRadius:8,padding:"10px 12px",border:`1px solid ${r.a?C.greenMid:C.cardBorder}`,textAlign:"center"}}>
+              <div style={{fontSize:9,color:r.a?C.greenDark:C.textLight,textTransform:"uppercase",letterSpacing:.6,fontFamily:"'DM Sans',sans-serif",marginBottom:4}}>{r.l}</div>
+              <div style={{fontSize:16,fontWeight:800,color:r.a?C.green:C.text,fontFamily:"'Sora',sans-serif"}}>{r.v}</div>
+            </div>
+          ))}
+        </div>
+        <Bar val={pp.courses.length} max={COURSES.length}/>
+        <div style={{marginTop:16}}>
+          {COURSES.map((c,i)=>{
+            const done=pp.courses.includes(c.id);
+            return(
+              <div key={c.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 0",borderBottom:i<COURSES.length-1?`1px solid ${C.cardBorder}`:"none",opacity:done?1:.55}}>
+                <div style={{display:"flex",alignItems:"center",gap:10}}>
+                  <div style={{width:30,height:30,borderRadius:6,background:done?C.greenLight:C.pageGrey,display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,flexShrink:0}}>{done?"✅":"📖"}</div>
+                  <div>
+                    <div style={{fontWeight:600,fontSize:13,color:C.text,fontFamily:"'DM Sans',sans-serif"}}>{c.title}</div>
+                    <div style={{fontSize:11,color:C.textMid,fontFamily:"'DM Sans',sans-serif"}}>{c.dur}{c.cert?" · 🏅 cert":""}</div>
+                  </div>
+                </div>
+                <span style={{fontSize:11,fontWeight:700,padding:"2px 10px",borderRadius:99,fontFamily:"'DM Sans',sans-serif",background:done?C.greenLight:C.goldLight,color:done?C.greenDark:"#7A4800",border:`1px solid ${done?C.green+"30":C.gold+"30"}`}}>{done?"✓ Completed":`+${c.pts} pts`}</span>
+              </div>
+            );
+          })}
+        </div>
+      </Modal>
+    );
+  })();
+
+  if(isAdmin){
+    return(
+      <div>
+        <div style={{display:"flex",gap:10,marginBottom:18,flexWrap:"wrap"}}>
+          <Metric label="Avg Completion" value={`${avgPct}%`} icon="📊" accent onClick={()=>setMetricModal("rate")}/>
+          <Metric label="Certified Partners" value={totalCerts} icon="🏅" onClick={()=>setMetricModal("certs")}/>
+          <Metric label="All Courses Done" value={allDone} icon="✅" accent onClick={()=>setMetricModal("complete100")}/>
+          <Metric label="Portfolio Pts (Courses)" value={totalPtsEarned.toLocaleString()} sub="from training" icon="⭐" onClick={()=>setMetricModal("totalpts")}/>
+          <Metric label="Partners" value={state.partners.length} icon="🤝" onClick={()=>setMetricModal("allpartners")}/>
+        </div>
+        <Card noPad style={{marginBottom:14}}>
           <div style={{padding:"13px 18px",borderBottom:`1px solid ${C.cardBorder}`}}>
             <h3 style={{margin:0,fontSize:13,fontWeight:700,color:C.text,fontFamily:"'Sora',sans-serif"}}>Training Completion — All Partners</h3>
           </div>
@@ -1167,120 +1328,206 @@ const EnableSection=({partner,isAdmin})=>{
             })}</tbody>
           </table>
         </Card>
-      )}
-      {selCourse&&(()=>{
-        const alreadyDone=p.courses.includes(selCourse.id);
-        return(
-          <Modal title={selCourse.title} subtitle={`${selCourse.dur} · +${selCourse.pts} pts${selCourse.cert?` · 🏅 +${fmtK(cfg.certBonus)} NOK cert bonus`:""}`} onClose={()=>setSelCourse(null)}>
-            {alreadyDone&&(
-              <div style={{background:C.greenLight,border:`1px solid ${C.green}40`,borderRadius:8,padding:"14px 16px",marginBottom:16,display:"flex",alignItems:"center",gap:10}}>
-                <div style={{fontSize:28}}>✅</div>
-                <div>
-                  <div style={{fontWeight:700,fontSize:13,color:C.greenDark,fontFamily:"'Sora',sans-serif"}}>Course Completed</div>
-                  <div style={{fontSize:12,color:C.green,fontFamily:"'DM Sans',sans-serif",marginTop:2}}>
-                    +{selCourse.pts} pts earned{selCourse.cert?` · 🏅 Certificate + ${fmtK(cfg.certBonus)} NOK bonus`:""}
+        {metricModal==="rate"&&(
+          <Modal title="Course Completion Rate by Partner" subtitle={`Portfolio average: ${avgPct}%`} onClose={()=>setMetricModal(null)}>
+            <div style={{display:"flex",flexDirection:"column",gap:10}}>
+              {allStats.sort((a,b)=>b.pct-a.pct).map(pp=>(
+                <div key={pp.id} style={{borderBottom:`1px solid ${C.cardBorder}`,paddingBottom:10}}>
+                  <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
+                    <div style={{display:"flex",alignItems:"center",gap:8}}><span style={{fontSize:12,fontWeight:700,color:C.text,fontFamily:"'DM Sans',sans-serif"}}>{pp.name}</span><TierBadge tier={pp.tier}/></div>
+                    <span style={{fontSize:12,fontWeight:700,color:pp.pct===100?C.green:pp.pct>=60?C.gold:C.text,fontFamily:"'Sora',sans-serif"}}>{pp.courses.length}/{COURSES.length} · {pp.pct}%</span>
                   </div>
-                </div>
-              </div>
-            )}
-            <div style={{background:C.pageGrey,borderRadius:8,padding:"14px 16px",marginBottom:16}}>
-              <div style={{fontSize:13,color:C.text,fontFamily:"'DM Sans',sans-serif"}}>{selCourse.desc}</div>
-            </div>
-            {!alreadyDone&&(
-              <div style={{background:C.greenLight,borderRadius:8,padding:"12px 14px",marginBottom:16,border:`1px solid ${C.greenMid}`}}>
-                <div style={{fontSize:12,color:C.greenDark,fontFamily:"'DM Sans',sans-serif"}}>
-                  ✓ Earn <strong>+{selCourse.pts} pts</strong> on completion
-                  {selCourse.cert&&<> · 🏅 Certificate + <strong>+{fmtK(cfg.certBonus)} NOK</strong> bonus</>}
-                </div>
-              </div>
-            )}
-            {alreadyDone
-              ?<BtnP ch="Already Completed ✓" full disabled/>
-              :<BtnP ch={`Complete Course (+${selCourse.pts} pts)`} full onClick={()=>{dispatch({type:"COMPLETE_COURSE",partnerId:p.id,courseId:selCourse.id});setSelCourse(null);}}/>
-            }
-          </Modal>
-        );
-      })()}
-      {showRewards&&(
-        <Modal title="Rewards & Tier Benefits" subtitle="What you earn at each tier level" onClose={()=>setShowRewards(false)}>
-          <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10,marginBottom:20}}>
-            {TIERS.map(t=>{
-              const tc=TIER_CONFIG[t];
-              const isCurrent=t===p.tier;
-              return(
-                <div key={t} style={{borderRadius:8,border:`2px solid ${isCurrent?C.green:C.cardBorder}`,padding:"14px 12px",background:isCurrent?C.greenLight:C.pageGrey}}>
-                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-                    <TierBadge tier={t}/>
-                    {isCurrent&&<span style={{fontSize:9,background:C.green,color:"#fff",borderRadius:99,padding:"1px 7px",fontWeight:700,fontFamily:"'DM Sans',sans-serif"}}>YOUR TIER</span>}
-                  </div>
-                  {[{l:"Kickback",v:`${tc.kickback}%`},{l:"Per New Client",v:`${fmtK(tc.bonusPerClient)} NOK`},{l:"Cert Bonus",v:`${fmtK(tc.certBonus)} NOK`},{l:"MDF / yr",v:tc.mdf>0?fmtNOK(tc.mdf):"—"}].map(r=>(
-                    <div key={r.l} style={{display:"flex",justifyContent:"space-between",padding:"4px 0",borderBottom:`1px solid ${C.cardBorder}`}}>
-                      <span style={{fontSize:11,color:C.textMid,fontFamily:"'DM Sans',sans-serif"}}>{r.l}</span>
-                      <span style={{fontSize:11,fontWeight:700,color:C.text,fontFamily:"'Sora',sans-serif"}}>{r.v}</span>
-                    </div>
-                  ))}
-                  <div style={{marginTop:8,fontSize:10,color:C.textLight,fontFamily:"'DM Sans',sans-serif"}}>{tc.pointsMin.toLocaleString()}+ pts required</div>
-                </div>
-              );
-            })}
-          </div>
-          <div style={{fontWeight:700,fontSize:12,color:C.text,fontFamily:"'Sora',sans-serif",marginBottom:10}}>Points available from courses</div>
-          {COURSES.map((c,i)=>{
-            const done=p.courses.includes(c.id);
-            return(
-              <div key={c.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"9px 0",borderBottom:i<COURSES.length-1?`1px solid ${C.cardBorder}`:"none",opacity:done?.6:1}}>
-                <div style={{display:"flex",alignItems:"center",gap:8}}>
-                  <span>{done?"✅":"📖"}</span>
-                  <span style={{fontSize:13,fontWeight:600,color:C.text,fontFamily:"'DM Sans',sans-serif"}}>{c.title}</span>
-                  {c.cert&&<span style={{fontSize:10,color:C.gold,fontWeight:700,fontFamily:"'DM Sans',sans-serif"}}>🏅 cert</span>}
-                </div>
-                <div style={{display:"flex",gap:8,alignItems:"center"}}>
-                  {c.cert&&<span style={{fontSize:11,color:C.textMid,fontFamily:"'DM Sans',sans-serif"}}>+{fmtK(cfg.certBonus)} NOK bonus</span>}
-                  <span style={{background:done?C.pageGrey:C.goldLight,color:done?C.textLight:"#7A4800",borderRadius:99,padding:"2px 8px",fontSize:10,fontWeight:700,fontFamily:"'DM Sans',sans-serif"}}>{done?"earned":"+"+c.pts+" pts"}</span>
-                </div>
-              </div>
-            );
-          })}
-        </Modal>
-      )}
-      {selPartnerEnable&&(()=>{
-        const pp=selPartnerEnable;
-        const ppCfg=TIER_CONFIG[pp.tier];
-        const ppEarned=COURSES.filter(c=>pp.courses.includes(c.id)).reduce((s,c)=>s+c.pts,0);
-        const ppCerts=COURSES.filter(c=>c.cert&&pp.courses.includes(c.id)).length;
-        return(
-          <Modal title={`${pp.name} — Training Detail`} subtitle={`${pp.tier} tier · ${pp.courses.length}/${COURSES.length} courses · ${ppEarned} pts from training`} onClose={()=>setSelPartnerEnable(null)}>
-            <div style={{display:"flex",gap:8,marginBottom:16}}>
-              {[{l:"Completed",v:`${pp.courses.length}/${COURSES.length}`,a:true},{l:"Certifications",v:`🏅 ${ppCerts}`},{l:"Points from Courses",v:`${ppEarned} pts`,a:true},{l:"Remaining",v:`${COURSES.filter(c=>!pp.courses.includes(c.id)).reduce((s,c)=>s+c.pts,0)} pts`}].map(r=>(
-                <div key={r.l} style={{flex:1,background:r.a?C.greenLight:C.pageGrey,borderRadius:8,padding:"10px 12px",border:`1px solid ${r.a?C.greenMid:C.cardBorder}`,textAlign:"center"}}>
-                  <div style={{fontSize:9,color:r.a?C.greenDark:C.textLight,textTransform:"uppercase",letterSpacing:.6,fontFamily:"'DM Sans',sans-serif",marginBottom:4}}>{r.l}</div>
-                  <div style={{fontSize:16,fontWeight:800,color:r.a?C.green:C.text,fontFamily:"'Sora',sans-serif"}}>{r.v}</div>
+                  <Bar val={pp.courses.length} max={COURSES.length} thin/>
                 </div>
               ))}
             </div>
-            <Bar val={pp.courses.length} max={COURSES.length}/>
-            <div style={{marginTop:16}}>
-              {COURSES.map((c,i)=>{
-                const done=pp.courses.includes(c.id);
-                return(
-                  <div key={c.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 0",borderBottom:i<COURSES.length-1?`1px solid ${C.cardBorder}`:"none",opacity:done?1:.55}}>
-                    <div style={{display:"flex",alignItems:"center",gap:10}}>
-                      <div style={{width:30,height:30,borderRadius:6,background:done?C.greenLight:C.pageGrey,display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,flexShrink:0}}>{done?"✅":"📖"}</div>
-                      <div>
-                        <div style={{fontWeight:600,fontSize:13,color:C.text,fontFamily:"'DM Sans',sans-serif"}}>{c.title}</div>
-                        <div style={{fontSize:11,color:C.textMid,fontFamily:"'DM Sans',sans-serif"}}>{c.dur}{c.cert?` · 🏅 cert`:""}</div>
-                      </div>
-                    </div>
-                    <span style={{fontSize:11,fontWeight:700,padding:"2px 10px",borderRadius:99,fontFamily:"'DM Sans',sans-serif",background:done?C.greenLight:C.goldLight,color:done?C.greenDark:"#7A4800",border:`1px solid ${done?C.green+"30":C.gold+"30"}`}}>
-                      {done?"✓ Completed":`+${c.pts} pts`}
-                    </span>
+          </Modal>
+        )}
+        {metricModal==="certs"&&(
+          <Modal title="Certification Status — All Partners" onClose={()=>setMetricModal(null)}>
+            <div style={{display:"flex",flexDirection:"column",gap:8}}>
+              <div style={{fontSize:11,fontWeight:700,color:C.green,textTransform:"uppercase",letterSpacing:.6,marginBottom:4,fontFamily:"'DM Sans',sans-serif"}}>Certified ({totalCerts})</div>
+              {state.partners.filter(pp=>pp.certified).map(pp=>(
+                <div key={pp.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",borderBottom:`1px solid ${C.cardBorder}`,paddingBottom:8}}>
+                  <span style={{fontSize:12,fontWeight:700,color:C.text,fontFamily:"'DM Sans',sans-serif"}}>{pp.name}</span>
+                  <div style={{display:"flex",gap:6,alignItems:"center"}}><TierBadge tier={pp.tier}/><span>🏅</span></div>
+                </div>
+              ))}
+              {state.partners.filter(pp=>!pp.certified).length>0&&<>
+                <div style={{fontSize:11,fontWeight:700,color:C.textMid,textTransform:"uppercase",letterSpacing:.6,marginTop:8,marginBottom:4,fontFamily:"'DM Sans',sans-serif"}}>Not yet certified ({state.partners.filter(pp=>!pp.certified).length})</div>
+                {state.partners.filter(pp=>!pp.certified).map(pp=>(
+                  <div key={pp.id} style={{display:"flex",justifyContent:"space-between",padding:"6px 0",borderBottom:`1px solid ${C.cardBorder}`}}>
+                    <span style={{fontSize:12,color:C.textMid,fontFamily:"'DM Sans',sans-serif"}}>{pp.name}</span>
+                    <TierBadge tier={pp.tier}/>
                   </div>
-                );
-              })}
+                ))}
+              </>}
             </div>
           </Modal>
-        );
-      })()}
+        )}
+        {metricModal==="complete100"&&(
+          <Modal title="Partners — 100% Course Completion" onClose={()=>setMetricModal(null)}>
+            <div style={{display:"flex",flexDirection:"column",gap:8}}>
+              {state.partners.filter(pp=>pp.courses.length===COURSES.length).length===0
+                ?<div style={{color:C.textMid,fontSize:13,fontFamily:"'DM Sans',sans-serif"}}>No partners have completed all courses yet.</div>
+                :state.partners.filter(pp=>pp.courses.length===COURSES.length).map(pp=>(
+                  <div key={pp.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",borderBottom:`1px solid ${C.cardBorder}`,paddingBottom:8}}>
+                    <span style={{fontSize:12,fontWeight:700,color:C.text,fontFamily:"'DM Sans',sans-serif"}}>{pp.name}</span>
+                    <div style={{display:"flex",gap:6,alignItems:"center"}}><TierBadge tier={pp.tier}/><span style={{fontSize:11,color:C.green,fontWeight:700,fontFamily:"'DM Sans',sans-serif"}}>✅ All done</span></div>
+                  </div>
+                ))
+              }
+              <div style={{marginTop:4,fontSize:12,color:C.textMid,fontFamily:"'DM Sans',sans-serif"}}>{state.partners.filter(pp=>pp.courses.length<COURSES.length).length} partner(s) still in progress</div>
+            </div>
+          </Modal>
+        )}
+        {metricModal==="totalpts"&&(
+          <Modal title="Course Points Earned — Portfolio" onClose={()=>setMetricModal(null)}>
+            <div style={{display:"flex",flexDirection:"column",gap:8}}>
+              {allStats.sort((a,b)=>b.earned-a.earned).map(pp=>(
+                <div key={pp.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",borderBottom:`1px solid ${C.cardBorder}`,paddingBottom:8}}>
+                  <span style={{fontSize:12,fontWeight:700,color:C.text,fontFamily:"'DM Sans',sans-serif"}}>{pp.name}</span>
+                  <span style={{fontSize:13,fontWeight:700,color:C.gold,fontFamily:"'Sora',sans-serif"}}>⭐ {pp.earned.toLocaleString()} pts</span>
+                </div>
+              ))}
+              <div style={{display:"flex",justifyContent:"space-between",paddingTop:4}}>
+                <span style={{fontSize:13,fontWeight:700,color:C.text,fontFamily:"'DM Sans',sans-serif"}}>Total portfolio</span>
+                <span style={{fontSize:13,fontWeight:700,color:C.gold,fontFamily:"'Sora',sans-serif"}}>⭐ {totalPtsEarned.toLocaleString()} pts</span>
+              </div>
+            </div>
+          </Modal>
+        )}
+        {metricModal==="allpartners"&&(
+          <Modal title="Partner Training Overview" onClose={()=>setMetricModal(null)}>
+            <div style={{display:"flex",flexDirection:"column",gap:8}}>
+              {allStats.map(pp=>(
+                <div key={pp.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",borderBottom:`1px solid ${C.cardBorder}`,paddingBottom:8}}>
+                  <div>
+                    <div style={{fontSize:12,fontWeight:700,color:C.text,fontFamily:"'DM Sans',sans-serif"}}>{pp.name}</div>
+                    <div style={{fontSize:11,color:C.textMid,fontFamily:"'DM Sans',sans-serif"}}>{pp.courses.length}/{COURSES.length} courses · {pp.certs} cert(s) · {pp.earned} pts</div>
+                  </div>
+                  <TierBadge tier={pp.tier}/>
+                </div>
+              ))}
+            </div>
+          </Modal>
+        )}
+        {partnerDrillModal}
+      </div>
+    );
+  }
+
+  return(
+    <div>
+      <div style={{display:"flex",gap:10,marginBottom:18,flexWrap:"wrap"}}>
+        <Metric label="Completed" value={`${p.courses.length}/${COURSES.length}`} icon="✅" accent onClick={()=>setMetricModal("completed")}/>
+        <Metric label="Points Earned" value={earned.toLocaleString()} sub="from courses" icon="⭐" accent onClick={()=>setMetricModal("points")}/>
+        <Metric label="Certifications" value={COURSES.filter(c=>c.cert&&p.courses.includes(c.id)).length} icon="🏅" onClick={()=>setMetricModal("mycerts")}/>
+        <Metric label="Cert Bonus" value={`${fmtK(cfg.certBonus)} NOK`} sub="per certificate" icon="💰" onClick={()=>setMetricModal("certbonus")}/>
+        <Metric label="Remaining" value={COURSES.filter(c=>!p.courses.includes(c.id)).reduce((s,c)=>s+c.pts,0)} sub="pts available" icon="📈" onClick={()=>setMetricModal("remaining")}/>
+      </div>
+      {courseList}
+      {promoBanner}
+      {metricModal==="completed"&&(
+        <Modal title="Completed Courses" subtitle={`${p.courses.length} of ${COURSES.length} done`} onClose={()=>setMetricModal(null)}>
+          <div style={{display:"flex",flexDirection:"column",gap:8}}>
+            {p.courses.length===0&&<div style={{color:C.textMid,fontSize:13,fontFamily:"'DM Sans',sans-serif"}}>No courses completed yet. Start from the Learning Paths below.</div>}
+            {COURSES.filter(c=>p.courses.includes(c.id)).map(c=>(
+              <div key={c.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",borderBottom:`1px solid ${C.cardBorder}`,paddingBottom:8}}>
+                <div style={{display:"flex",alignItems:"center",gap:10}}>
+                  <span style={{fontSize:18}}>✅</span>
+                  <div>
+                    <div style={{fontSize:12,fontWeight:700,color:C.text,fontFamily:"'DM Sans',sans-serif"}}>{c.title}</div>
+                    <div style={{fontSize:11,color:C.textMid,fontFamily:"'DM Sans',sans-serif"}}>{c.dur}{c.cert?" · 🏅 cert":""}</div>
+                  </div>
+                </div>
+                <span style={{fontSize:12,fontWeight:700,color:C.gold,fontFamily:"'Sora',sans-serif"}}>+{c.pts} pts</span>
+              </div>
+            ))}
+            {p.courses.length>0&&<div style={{paddingTop:4,display:"flex",justifyContent:"space-between"}}>
+              <span style={{fontSize:13,fontWeight:700,color:C.text,fontFamily:"'DM Sans',sans-serif"}}>Total earned</span>
+              <span style={{fontSize:13,fontWeight:700,color:C.gold,fontFamily:"'Sora',sans-serif"}}>⭐ {earned.toLocaleString()} pts</span>
+            </div>}
+          </div>
+        </Modal>
+      )}
+      {metricModal==="points"&&(
+        <Modal title="Points from Courses — Breakdown" onClose={()=>setMetricModal(null)}>
+          <div style={{display:"flex",flexDirection:"column",gap:8}}>
+            {COURSES.filter(c=>p.courses.includes(c.id)).map(c=>(
+              <div key={c.id} style={{display:"flex",justifyContent:"space-between",borderBottom:`1px solid ${C.cardBorder}`,paddingBottom:8}}>
+                <span style={{fontSize:12,color:C.text,fontFamily:"'DM Sans',sans-serif"}}>{c.title}</span>
+                <span style={{fontSize:12,fontWeight:700,color:C.gold,fontFamily:"'Sora',sans-serif"}}>+{c.pts} pts{c.cert?` +${fmtK(cfg.certBonus)} NOK bonus`:""}</span>
+              </div>
+            ))}
+            {p.courses.length===0&&<div style={{color:C.textMid,fontSize:13,fontFamily:"'DM Sans',sans-serif"}}>No courses completed yet.</div>}
+            {p.courses.length>0&&<div style={{display:"flex",justifyContent:"space-between",paddingTop:4}}>
+              <span style={{fontSize:13,fontWeight:700,color:C.text,fontFamily:"'DM Sans',sans-serif"}}>Total from courses</span>
+              <span style={{fontSize:13,fontWeight:700,color:C.gold,fontFamily:"'Sora',sans-serif"}}>⭐ {earned.toLocaleString()} pts</span>
+            </div>}
+          </div>
+        </Modal>
+      )}
+      {metricModal==="mycerts"&&(
+        <Modal title="Certifications Earned" onClose={()=>setMetricModal(null)}>
+          <div style={{display:"flex",flexDirection:"column",gap:8}}>
+            {COURSES.filter(c=>c.cert&&p.courses.includes(c.id)).length===0
+              ?<div style={{color:C.textMid,fontSize:13,fontFamily:"'DM Sans',sans-serif"}}>No certifications yet. Complete the "Advanced Bookkeeping Module" or "API & Integrations" course to earn one.</div>
+              :COURSES.filter(c=>c.cert&&p.courses.includes(c.id)).map(c=>(
+                <div key={c.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",borderBottom:`1px solid ${C.cardBorder}`,paddingBottom:8}}>
+                  <div style={{display:"flex",alignItems:"center",gap:10}}><span>🏅</span><span style={{fontSize:12,fontWeight:700,color:C.text,fontFamily:"'DM Sans',sans-serif"}}>{c.title}</span></div>
+                  <span style={{fontSize:12,fontWeight:700,color:C.green,fontFamily:"'Sora',sans-serif"}}>+{fmtK(cfg.certBonus)} NOK bonus</span>
+                </div>
+              ))
+            }
+          </div>
+        </Modal>
+      )}
+      {metricModal==="certbonus"&&(
+        <Modal title="Certification Bonus Structure" subtitle="Bonus paid on completing a certification course" onClose={()=>setMetricModal(null)}>
+          <div style={{display:"flex",flexDirection:"column",gap:10}}>
+            <div style={{background:C.blueLight,borderRadius:8,padding:"12px 14px",border:`1px solid ${C.blue}20`,marginBottom:4}}>
+              <div style={{fontSize:12,color:C.blue,fontFamily:"'DM Sans',sans-serif"}}>Certification bonuses are paid in addition to course points, and scale with your tier. Higher tier = higher bonus.</div>
+            </div>
+            {TIERS.map(t=>{
+              const isCur=t===p.tier;
+              return(
+                <div key={t} style={{display:"flex",justifyContent:"space-between",alignItems:"center",background:isCur?C.greenLight:C.pageGrey,borderRadius:8,padding:"12px 14px",border:`1px solid ${isCur?C.green+"40":C.cardBorder}`}}>
+                  <div style={{display:"flex",alignItems:"center",gap:8}}><TierBadge tier={t}/>{isCur&&<span style={{fontSize:10,color:C.green,fontWeight:700,fontFamily:"'DM Sans',sans-serif"}}>← your tier</span>}</div>
+                  <span style={{fontSize:16,fontWeight:800,color:isCur?C.green:C.text,fontFamily:"'Sora',sans-serif"}}>{fmtK(TIER_CONFIG[t].certBonus)} NOK</span>
+                </div>
+              );
+            })}
+            <div style={{fontSize:11,color:C.textMid,fontFamily:"'DM Sans',sans-serif",marginTop:4}}>Certified courses: Advanced Bookkeeping Module · API & Integrations</div>
+          </div>
+        </Modal>
+      )}
+      {metricModal==="remaining"&&(
+        <Modal title="Courses Still Available" subtitle="Points you can still earn" onClose={()=>setMetricModal(null)}>
+          <div style={{display:"flex",flexDirection:"column",gap:8}}>
+            {COURSES.filter(c=>!p.courses.includes(c.id)).length===0
+              ?<div style={{background:C.greenLight,borderRadius:8,padding:"16px",textAlign:"center",border:`1px solid ${C.green}40`}}><div style={{fontSize:24,marginBottom:8}}>🎉</div><div style={{fontSize:13,fontWeight:700,color:C.green,fontFamily:"'Sora',sans-serif"}}>All courses completed!</div></div>
+              :COURSES.filter(c=>!p.courses.includes(c.id)).map(c=>(
+                <div key={c.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",borderBottom:`1px solid ${C.cardBorder}`,paddingBottom:8}}>
+                  <div>
+                    <div style={{fontSize:12,fontWeight:700,color:C.text,fontFamily:"'DM Sans',sans-serif"}}>{c.title}</div>
+                    <div style={{fontSize:11,color:C.textMid,fontFamily:"'DM Sans',sans-serif"}}>{c.dur}{c.cert?" · 🏅 cert bonus: "+fmtK(cfg.certBonus)+" NOK":""}</div>
+                  </div>
+                  <span style={{background:C.goldLight,color:"#7A4800",borderRadius:99,padding:"2px 10px",fontSize:11,fontWeight:700,fontFamily:"'DM Sans',sans-serif"}}>+{c.pts} pts</span>
+                </div>
+              ))
+            }
+            {COURSES.filter(c=>!p.courses.includes(c.id)).length>0&&(
+              <div style={{display:"flex",justifyContent:"space-between",paddingTop:4}}>
+                <span style={{fontSize:13,fontWeight:700,color:C.text,fontFamily:"'DM Sans',sans-serif"}}>Total available</span>
+                <span style={{fontSize:13,fontWeight:700,color:C.gold,fontFamily:"'Sora',sans-serif"}}>⭐ {COURSES.filter(c=>!p.courses.includes(c.id)).reduce((s,c)=>s+c.pts,0)} pts</span>
+              </div>
+            )}
+          </div>
+        </Modal>
+      )}
+      {courseModal}
+      {rewardsModal}
     </div>
   );
 };
@@ -1363,6 +1610,9 @@ const IncentivizeSection=({partner,isAdmin})=>{
   const [showCompare,setShowCompare]=useState(false);
   const [selAchievement,setSelAchievement]=useState(null);
   const [joinedChallenges,setJoinedChallenges]=useState(new Set());
+  const [selLeaderPartner,setSelLeaderPartner]=useState(null);
+  const [adminMetricModal,setAdminMetricModal]=useState(null);
+  const [adminAchievModal,setAdminAchievModal]=useState(null);
   const cfg=TIER_CONFIG[p.tier];
   const customers=state.customers[p.id]||[];
   const leads=state.leads.filter(l=>l.partnerId===p.id);
@@ -1397,11 +1647,11 @@ const IncentivizeSection=({partner,isAdmin})=>{
     return(
       <div>
         <div style={{display:"flex",gap:10,marginBottom:16,flexWrap:"wrap"}}>
-          <Metric label="Total Programme Points" value={totalPts.toLocaleString()} icon="⭐" accent/>
-          <Metric label="Gold Partners" value={tierCounts.Gold} icon="🥇" accent/>
-          <Metric label="Silver Partners" value={tierCounts.Silver} icon="🥈"/>
-          <Metric label="Bronze Partners" value={tierCounts.Bronze} icon="🥉"/>
-          <Metric label="Certified Partners" value={state.partners.filter(pp=>pp.certified).length} icon="🏅"/>
+          <Metric label="Total Programme Points" value={totalPts.toLocaleString()} icon="⭐" accent onClick={()=>setAdminMetricModal("points")}/>
+          <Metric label="Gold Partners" value={tierCounts.Gold} icon="🥇" accent onClick={()=>setAdminMetricModal("gold")}/>
+          <Metric label="Silver Partners" value={tierCounts.Silver} icon="🥈" onClick={()=>setAdminMetricModal("silver")}/>
+          <Metric label="Bronze Partners" value={tierCounts.Bronze} icon="🥉" onClick={()=>setAdminMetricModal("bronze")}/>
+          <Metric label="Certified Partners" value={state.partners.filter(pp=>pp.certified).length} icon="🏅" onClick={()=>setAdminMetricModal("certified")}/>
         </div>
         <Card noPad style={{marginBottom:16}}>
           <div style={{padding:"13px 18px",borderBottom:`1px solid ${C.cardBorder}`}}>
@@ -1415,7 +1665,7 @@ const IncentivizeSection=({partner,isAdmin})=>{
               return(
                 <tr key={pp.id} onMouseEnter={e=>e.currentTarget.style.background=C.rowHover} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
                   <td style={{padding:"10px 12px",borderBottom:`1px solid ${C.cardBorder}`,fontWeight:800,fontSize:14,color:i===0?C.gold:i===1?C.textMid:C.textLight,fontFamily:"'Sora',sans-serif",width:36}}>{i===0?"🥇":i===1?"🥈":i===2?"🥉":i+1}</td>
-                  <td style={{padding:"10px 12px",borderBottom:`1px solid ${C.cardBorder}`,fontWeight:600,fontSize:13,color:C.text,fontFamily:"'DM Sans',sans-serif"}}>{pp.name}</td>
+                  <td style={{padding:"10px 12px",borderBottom:`1px solid ${C.cardBorder}`,fontWeight:600,fontSize:13,color:C.blue,fontFamily:"'DM Sans',sans-serif",cursor:"pointer"}} onClick={()=>setSelLeaderPartner(pp)}>{pp.name}</td>
                   <TD><TierBadge tier={pp.tier}/></TD>
                   <td style={{padding:"10px 12px",borderBottom:`1px solid ${C.cardBorder}`,fontWeight:800,fontSize:13,color:C.gold,fontFamily:"'Sora',sans-serif"}}>{pp.points.toLocaleString()}</td>
                   <TD>{cust.length}</TD>
@@ -1439,7 +1689,7 @@ const IncentivizeSection=({partner,isAdmin})=>{
                 return a.l==="First Lead"?ppLeads.length>0:a.l==="5 Clients"?ppCust.length>=5:a.l==="Certification"?pp.certified:a.l==="Gold Partner"?pp.tier==="Gold":a.l==="10 Deals Won"?pp.wins>=10:pp.courses.length>=COURSES.length;
               }).length;
               return(
-                <div key={a.l} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",background:C.pageGrey,borderRadius:8,border:`1px solid ${C.cardBorder}`}}>
+                <div key={a.l} onClick={()=>setAdminAchievModal(a)} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",background:C.pageGrey,borderRadius:8,border:`1px solid ${C.cardBorder}`,cursor:"pointer",transition:"box-shadow .15s"}} onMouseEnter={e=>e.currentTarget.style.boxShadow="0 4px 12px rgba(22,33,58,.1)"} onMouseLeave={e=>e.currentTarget.style.boxShadow="none"}>
                   <div style={{fontSize:22}}>{a.icon}</div>
                   <div style={{flex:1}}>
                     <div style={{fontWeight:600,fontSize:12,color:C.text,fontFamily:"'DM Sans',sans-serif"}}>{a.l}</div>
@@ -1451,6 +1701,117 @@ const IncentivizeSection=({partner,isAdmin})=>{
             })}
           </div>
         </Card>
+        {adminMetricModal&&(()=>{
+          const tierMap={"gold":"Gold","silver":"Silver","bronze":"Bronze"};
+          const t=tierMap[adminMetricModal];
+          if(adminMetricModal==="points"){
+            return(
+              <Modal title="Points Distribution — All Partners" onClose={()=>setAdminMetricModal(null)}>
+                <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                  {[...state.partners].sort((a,b)=>b.points-a.points).map((pp,i)=>{
+                    const pct=totalPts?Math.round((pp.points/totalPts)*100):0;
+                    return(
+                      <div key={pp.id} style={{borderBottom:`1px solid ${C.cardBorder}`,paddingBottom:8}}>
+                        <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
+                          <div style={{display:"flex",alignItems:"center",gap:6}}><span style={{fontSize:12,fontWeight:700,color:i===0?C.gold:C.text,fontFamily:"'Sora',sans-serif"}}>{i===0?"🥇":i===1?"🥈":i===2?"🥉":i+1}.</span><span style={{fontSize:12,fontWeight:700,color:C.text,fontFamily:"'DM Sans',sans-serif"}}>{pp.name}</span></div>
+                          <span style={{fontSize:12,fontWeight:700,color:C.gold,fontFamily:"'Sora',sans-serif"}}>⭐ {pp.points.toLocaleString()} pts ({pct}%)</span>
+                        </div>
+                        <div style={{background:C.pageGrey,borderRadius:99,height:5}}><div style={{width:`${pct}%`,background:C.gold,borderRadius:99,height:5}}/></div>
+                      </div>
+                    );
+                  })}
+                  <div style={{display:"flex",justifyContent:"space-between",paddingTop:4}}>
+                    <span style={{fontSize:13,fontWeight:700,color:C.text,fontFamily:"'DM Sans',sans-serif"}}>Programme total</span>
+                    <span style={{fontSize:13,fontWeight:700,color:C.gold,fontFamily:"'Sora',sans-serif"}}>⭐ {totalPts.toLocaleString()} pts</span>
+                  </div>
+                </div>
+              </Modal>
+            );
+          }
+          if(t){
+            const tPartners=state.partners.filter(pp=>pp.tier===t);
+            return(
+              <Modal title={`${t} Partners`} subtitle={`${tPartners.length} partner(s) at ${t} tier`} onClose={()=>setAdminMetricModal(null)}>
+                <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                  {tPartners.map(pp=>{
+                    const cust=state.customers[pp.id]||[];
+                    const pLeads=state.leads.filter(l=>l.partnerId===pp.id);
+                    return(
+                      <div key={pp.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",borderBottom:`1px solid ${C.cardBorder}`,paddingBottom:10}}>
+                        <div>
+                          <div style={{fontSize:12,fontWeight:700,color:C.text,fontFamily:"'DM Sans',sans-serif"}}>{pp.name}</div>
+                          <div style={{fontSize:11,color:C.textMid,fontFamily:"'DM Sans',sans-serif"}}>{cust.length} clients · {pLeads.length} leads · {pp.points.toLocaleString()} pts</div>
+                        </div>
+                        <span style={{fontSize:12,fontWeight:700,color:C.green,fontFamily:"'Sora',sans-serif"}}>{TIER_CONFIG[t].kickback}% kickback</span>
+                      </div>
+                    );
+                  })}
+                  <div style={{fontSize:12,color:C.textMid,fontFamily:"'DM Sans',sans-serif",paddingTop:4}}>Threshold: {TIER_CONFIG[t].pointsMin.toLocaleString()}+ pts</div>
+                </div>
+              </Modal>
+            );
+          }
+          if(adminMetricModal==="certified"){
+            return(
+              <Modal title="Certified Partners" onClose={()=>setAdminMetricModal(null)}>
+                <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                  {state.partners.filter(pp=>pp.certified).map(pp=>(
+                    <div key={pp.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",borderBottom:`1px solid ${C.cardBorder}`,paddingBottom:8}}>
+                      <span style={{fontSize:12,fontWeight:700,color:C.text,fontFamily:"'DM Sans',sans-serif"}}>{pp.name}</span>
+                      <div style={{display:"flex",gap:6,alignItems:"center"}}><TierBadge tier={pp.tier}/><span>🏅</span></div>
+                    </div>
+                  ))}
+                  {state.partners.filter(pp=>!pp.certified).length>0&&<>
+                    <div style={{fontSize:11,fontWeight:700,color:C.textMid,textTransform:"uppercase",letterSpacing:.6,marginTop:8,fontFamily:"'DM Sans',sans-serif"}}>Not certified ({state.partners.filter(pp=>!pp.certified).length})</div>
+                    {state.partners.filter(pp=>!pp.certified).map(pp=>(
+                      <div key={pp.id} style={{display:"flex",justifyContent:"space-between",padding:"6px 0",borderBottom:`1px solid ${C.cardBorder}`}}>
+                        <span style={{fontSize:12,color:C.textMid,fontFamily:"'DM Sans',sans-serif"}}>{pp.name}</span>
+                        <TierBadge tier={pp.tier}/>
+                      </div>
+                    ))}
+                  </>}
+                </div>
+              </Modal>
+            );
+          }
+          return null;
+        })()}
+        {adminAchievModal&&(()=>{
+          const a=adminAchievModal;
+          const earnedPartners=state.partners.filter(pp=>{
+            const ppCust=state.customers[pp.id]||[];const ppLeads=state.leads.filter(l=>l.partnerId===pp.id);
+            return a.l==="First Lead"?ppLeads.length>0:a.l==="5 Clients"?ppCust.length>=5:a.l==="Certification"?pp.certified:a.l==="Gold Partner"?pp.tier==="Gold":a.l==="10 Deals Won"?pp.wins>=10:pp.courses.length>=COURSES.length;
+          });
+          const notEarned=state.partners.filter(pp=>!earnedPartners.includes(pp));
+          return(
+            <Modal title={`${a.icon} ${a.l}`} subtitle={`${earnedPartners.length} of ${state.partners.length} partners earned this`} onClose={()=>setAdminAchievModal(null)}>
+              <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                {earnedPartners.length>0&&<>
+                  <div style={{fontSize:11,fontWeight:700,color:C.green,textTransform:"uppercase",letterSpacing:.6,marginBottom:4,fontFamily:"'DM Sans',sans-serif"}}>Earned ({earnedPartners.length})</div>
+                  {earnedPartners.map(pp=>(
+                    <div key={pp.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",borderBottom:`1px solid ${C.cardBorder}`,paddingBottom:8}}>
+                      <span style={{fontSize:12,fontWeight:700,color:C.text,fontFamily:"'DM Sans',sans-serif"}}>{pp.name}</span>
+                      <div style={{display:"flex",gap:6,alignItems:"center"}}><TierBadge tier={pp.tier}/><span style={{fontSize:11,color:C.green,fontWeight:700}}>✓ Earned</span></div>
+                    </div>
+                  ))}
+                </>}
+                {notEarned.length>0&&<>
+                  <div style={{fontSize:11,fontWeight:700,color:C.textMid,textTransform:"uppercase",letterSpacing:.6,marginTop:8,marginBottom:4,fontFamily:"'DM Sans',sans-serif"}}>Not yet earned ({notEarned.length})</div>
+                  {notEarned.map(pp=>(
+                    <div key={pp.id} style={{display:"flex",justifyContent:"space-between",padding:"6px 0",borderBottom:`1px solid ${C.cardBorder}`}}>
+                      <span style={{fontSize:12,color:C.textMid,fontFamily:"'DM Sans',sans-serif"}}>{pp.name}</span>
+                      <TierBadge tier={pp.tier}/>
+                    </div>
+                  ))}
+                </>}
+                <div style={{background:C.pageGrey,borderRadius:8,padding:"10px 12px",marginTop:4}}>
+                  <div style={{fontSize:11,color:C.textMid,fontFamily:"'DM Sans',sans-serif"}}>{a.how}</div>
+                </div>
+              </div>
+            </Modal>
+          );
+        })()}
+        {selLeaderPartner&&<PartnerProfileModal partner={selLeaderPartner} onClose={()=>setSelLeaderPartner(null)} onEditTargets={()=>{}}/>}
       </div>
     );
   }
@@ -1934,7 +2295,7 @@ function App(){
   const next=NEXT_TIER[partner.tier];
 
   return(
-    <AppCtx.Provider value={{state,dispatch:dispatchWithToast,toast,setToast}}>
+    <AppCtx.Provider value={{state,dispatch:dispatchWithToast,toast,setToast,setTab}}>
       <div style={{minHeight:"100vh",background:C.pageGrey,fontFamily:"'DM Sans',sans-serif"}}>
         <style>{`@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}`}</style>
 
@@ -1942,7 +2303,7 @@ function App(){
         <div style={{background:C.navy,position:"sticky",top:0,zIndex:200}}>
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0 24px",height:52,borderBottom:`1px solid ${C.navyBorder}`}}>
             <div style={{display:"flex",alignItems:"center",gap:10}}>
-              <div style={{width:32,height:32,borderRadius:8,background:C.green,display:"flex",alignItems:"center",justifyContent:"center",fontSize:17,color:"#fff",fontWeight:900}}>✳</div>
+              <div style={{width:32,height:32,borderRadius:8,background:C.green,display:"flex",alignItems:"center",justifyContent:"center",overflow:"hidden"}}><img src="logoprikker.png" alt="" style={{width:22,height:22,filter:"brightness(0) invert(1)",objectFit:"contain"}}/></div>
               <div>
                 <div style={{color:"#fff",fontWeight:800,fontSize:14,lineHeight:1,fontFamily:"'Sora',sans-serif"}}>tripletex</div>
                 <div style={{color:C.green,fontWeight:600,fontSize:10,letterSpacing:.6,textTransform:"uppercase",fontFamily:"'DM Sans',sans-serif"}}>Partner Cloud</div>
