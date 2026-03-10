@@ -617,12 +617,15 @@ const TierCompareModal=({partner,onClose})=>{
 };
 
 /* ═══════════════════ PARTNER PROFILE MODAL (admin) ═══════════════════ */
-const PartnerProfileModal=({partner,onClose,onNavigate})=>{
+const PartnerProfileModal=({partner,onClose,onNavigate,onEditTargets})=>{
   const {state}=useContext(AppCtx);
   const customers=state.customers[partner.id]||[];
   const leads=state.leads.filter(l=>l.partnerId===partner.id);
   const cases=state.cases.filter(c=>c.partnerId===partner.id);
   const cfg=TIER_CONFIG[partner.tier];
+  const partnerGoals=state.goals?.[partner.id]||{};
+  const resolvedTargets=Object.fromEntries(GOAL_DEFS.map(g=>[g.key,partnerGoals[g.key]??g.defaults[partner.tier]]));
+  const goalCurrent={clients:customers.filter(c=>c.status!=="Churned").length,ba:Math.round(customers.filter(c=>c.status==="Active").length*.7),revenue:partner.revenue,leads:leads.length};
   return (
     <Modal title={partner.name} subtitle={`${partner.region} · Member since ${partner.joined} · ${partner.contact}`} onClose={onClose} wide>
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,marginBottom:16}}>
@@ -636,6 +639,31 @@ const PartnerProfileModal=({partner,onClose,onNavigate})=>{
           ))}
         </div>
       </div>
+      <Card noPad style={{marginBottom:14}}>
+        <div style={{padding:"10px 16px",borderBottom:`1px solid ${C.cardBorder}`,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+          <span style={{fontSize:12,fontWeight:700,color:C.text,fontFamily:"'Sora',sans-serif"}}>Annual Targets — Årshjul 2025</span>
+          <div style={{display:"flex",alignItems:"center",gap:8}}>
+            {Object.keys(partnerGoals).length>0&&<span style={{fontSize:9,background:C.goldLight,color:"#7A4800",borderRadius:99,padding:"1px 7px",fontWeight:700,fontFamily:"'DM Sans',sans-serif"}}>Custom</span>}
+            {onEditTargets&&<BtnG ch="✏ Edit Targets" small onClick={()=>{onEditTargets(partner);onClose();}}/>}
+          </div>
+        </div>
+        <div style={{padding:"4px 16px 10px"}}>
+          {GOAL_DEFS.map((g,i)=>{
+            const curr=goalCurrent[g.key];
+            const tgt=resolvedTargets[g.key];
+            const pct=Math.min(100,Math.round((curr/tgt)*100));
+            return(
+              <div key={g.key} style={{padding:"8px 0",borderBottom:i<GOAL_DEFS.length-1?`1px solid ${C.cardBorder}`:"none"}}>
+                <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
+                  <span style={{fontSize:12,color:C.textMid,fontFamily:"'DM Sans',sans-serif"}}>{g.label}</span>
+                  <span style={{fontSize:12,fontWeight:700,color:pct>=80?C.green:pct>=50?C.gold:C.red,fontFamily:"'Sora',sans-serif"}}>{g.key==="revenue"?`${(curr/1e6).toFixed(1)}M / ${(tgt/1e6).toFixed(1)}M NOK`:`${curr} / ${tgt} ${g.unit}`} · {pct}%</span>
+                </div>
+                <Bar val={curr} max={tgt} thin/>
+              </div>
+            );
+          })}
+        </div>
+      </Card>
       <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
         <BtnP ch="View Clients" small onClick={()=>{onNavigate("clients");onClose();}}/>
         <BtnP ch="View Leads" small onClick={()=>{onNavigate("leads");onClose();}}/>
@@ -687,6 +715,7 @@ const PlanSection=({partner,isAdmin})=>{
   const {state,dispatch}=useContext(AppCtx);
   const [modal,setModal]=useState(null);
   const [selPartner,setSelPartner]=useState(null);
+  const [editGoalsPartner,setEditGoalsPartner]=useState(null);
   const [selQ,setSelQ]=useState(null);
   const cfg=TIER_CONFIG[partner.tier];
   const customers=state.customers[partner.id]||[];
@@ -766,7 +795,7 @@ const PlanSection=({partner,isAdmin})=>{
             <h3 style={{margin:0,fontSize:13,fontWeight:700,color:C.text,fontFamily:"'Sora',sans-serif"}}>Annual Goals — Årshjul 2025</h3>
             {Object.keys(partnerGoals).length>0&&<span style={{fontSize:9,background:C.goldLight,color:"#7A4800",borderRadius:99,padding:"1px 7px",fontWeight:700,fontFamily:"'DM Sans',sans-serif"}}>Custom targets</span>}
           </div>
-          {isAdmin&&<BtnG ch="✏ Edit Targets" small onClick={()=>setModal("editgoals")}/>}
+          {isAdmin&&<BtnG ch="✏ Edit Targets" small onClick={()=>setEditGoalsPartner(partner)}/>}
         </div>
         <div style={{padding:"2px 18px 14px"}}>
           {GOALS.map((g,i)=>{
@@ -872,7 +901,10 @@ const PlanSection=({partner,isAdmin})=>{
                     <td style={{padding:"10px 12px",borderBottom:`1px solid ${C.cardBorder}`,minWidth:150}}>
                       {nc?<div style={{display:"flex",alignItems:"center",gap:6}}><Bar val={p.points-TIER_CONFIG[p.tier].pointsMin} max={ncMin-TIER_CONFIG[p.tier].pointsMin} thin/><span style={{fontSize:10,fontWeight:700,minWidth:28,color:C.textMid,fontFamily:"'Sora',sans-serif"}}>{pct}%</span></div>:<span style={{fontSize:11,color:C.green,fontWeight:700,fontFamily:"'DM Sans',sans-serif"}}>MAX 🥇</span>}
                     </td>
-                    <td style={{padding:"10px 12px",borderBottom:`1px solid ${C.cardBorder}`}}><button onClick={()=>setSelPartner(p)} style={{background:C.blueLight,color:C.blue,border:"none",borderRadius:6,padding:"4px 10px",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}>Profile</button></td>
+                    <td style={{padding:"10px 12px",borderBottom:`1px solid ${C.cardBorder}`,display:"flex",gap:6}}>
+                      <button onClick={()=>setSelPartner(p)} style={{background:C.blueLight,color:C.blue,border:"none",borderRadius:6,padding:"4px 10px",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}>Profile</button>
+                      <button onClick={()=>setEditGoalsPartner(p)} style={{background:C.goldLight,color:"#7A4800",border:"none",borderRadius:6,padding:"4px 10px",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}>✏ Targets</button>
+                    </td>
                   </tr>
                 );
               })}</tbody>
@@ -880,7 +912,6 @@ const PlanSection=({partner,isAdmin})=>{
           </div>
         </Card>
       )}
-      {modal==="editgoals"&&<GoalEditModal partner={partner} onClose={()=>setModal(null)}/>}
       {modal==="customers"&&<CustomersModal partner={partner} onClose={()=>setModal(null)}/>}
       {modal==="leads"&&<div style={{position:"fixed",inset:0,background:"rgba(22,33,58,.6)",zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center",backdropFilter:"blur(6px)"}} onClick={e=>{if(e.target===e.currentTarget)setModal(null);}}><div style={{background:C.white,borderRadius:12,padding:0,maxWidth:800,width:"100%",maxHeight:"80vh",overflow:"auto",margin:"0 20px"}}><div style={{padding:"16px 24px",borderBottom:`1px solid ${C.cardBorder}`,display:"flex",justifyContent:"space-between",alignItems:"center"}}><h2 style={{margin:0,fontSize:16,fontWeight:800,color:C.text,fontFamily:"'Sora',sans-serif"}}>Lead Pipeline — {partner.name}</h2><button onClick={()=>setModal(null)} style={{background:C.pageGrey,border:"none",borderRadius:6,width:30,height:30,cursor:"pointer",fontSize:16,color:C.textMid}}>✕</button></div><div style={{padding:24}}><LeadTable leads={leads} partner={partner}/></div></div></div>}
       {modal==="tiercompare"&&<TierCompareModal partner={partner} onClose={()=>setModal(null)}/>}
@@ -1006,7 +1037,8 @@ const PlanSection=({partner,isAdmin})=>{
           </Modal>
         );
       })()}
-      {selPartner&&<PartnerProfileModal partner={selPartner} onClose={()=>setSelPartner(null)} onNavigate={(view)=>console.log(view)}/>}
+      {selPartner&&<PartnerProfileModal partner={selPartner} onClose={()=>setSelPartner(null)} onNavigate={(view)=>console.log(view)} onEditTargets={p=>setEditGoalsPartner(p)}/>}
+      {editGoalsPartner&&<GoalEditModal partner={editGoalsPartner} onClose={()=>setEditGoalsPartner(null)}/>}
     </div>
   );
 };
@@ -1061,6 +1093,7 @@ const EnableSection=({partner,isAdmin})=>{
   const cfg=TIER_CONFIG[p.tier];
   const [selCourse,setSelCourse]=useState(null);
   const [showRewards,setShowRewards]=useState(false);
+  const [selPartnerEnable,setSelPartnerEnable]=useState(null);
   const earned=COURSES.filter(c=>p.courses.includes(c.id)).reduce((s,c)=>s+c.pts,0);
   return(
     <div>
@@ -1111,14 +1144,14 @@ const EnableSection=({partner,isAdmin})=>{
             <h3 style={{margin:0,fontSize:13,fontWeight:700,color:C.text,fontFamily:"'Sora',sans-serif"}}>Training Completion — All Partners</h3>
           </div>
           <table style={{width:"100%",borderCollapse:"collapse"}}>
-            <thead><tr><TH ch="Partner"/><TH ch="Tier"/><TH ch="Courses Completed"/><TH ch="Certifications"/><TH ch="Points from Courses" right/></tr></thead>
+            <thead><tr><TH ch="Partner"/><TH ch="Tier"/><TH ch="Courses Completed"/><TH ch="Certifications"/><TH ch="Points from Courses" right/><TH ch=""/></tr></thead>
             <tbody>{state.partners.map(pp=>{
               const ppEarned=COURSES.filter(c=>pp.courses.includes(c.id)).reduce((s,c)=>s+c.pts,0);
               const ppCerts=COURSES.filter(c=>c.cert&&pp.courses.includes(c.id)).length;
               const pct=Math.round((pp.courses.length/COURSES.length)*100);
               return(
                 <tr key={pp.id} onMouseEnter={e=>e.currentTarget.style.background=C.rowHover} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
-                  <td style={{padding:"10px 12px",borderBottom:`1px solid ${C.cardBorder}`,fontWeight:600,fontSize:13,color:C.text,fontFamily:"'DM Sans',sans-serif"}}>{pp.name}</td>
+                  <td style={{padding:"10px 12px",borderBottom:`1px solid ${C.cardBorder}`}}><span style={{fontWeight:600,fontSize:13,color:C.blue,cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}} onClick={()=>setSelPartnerEnable(pp)}>{pp.name}</span></td>
                   <TD><TierBadge tier={pp.tier}/></TD>
                   <td style={{padding:"10px 12px",borderBottom:`1px solid ${C.cardBorder}`,minWidth:180}}>
                     <div style={{display:"flex",alignItems:"center",gap:8}}>
@@ -1128,6 +1161,7 @@ const EnableSection=({partner,isAdmin})=>{
                   </td>
                   <TD>{ppCerts>0?`🏅 ${ppCerts}`:"-"}</TD>
                   <td style={{padding:"10px 12px",textAlign:"right",borderBottom:`1px solid ${C.cardBorder}`,fontSize:13,fontWeight:700,color:C.gold,fontFamily:"'Sora',sans-serif"}}>{ppEarned.toLocaleString()} pts</td>
+                  <td style={{padding:"10px 12px",borderBottom:`1px solid ${C.cardBorder}`}}><button onClick={()=>setSelPartnerEnable(pp)} style={{background:C.blueLight,color:C.blue,border:"none",borderRadius:6,padding:"4px 10px",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}>Details</button></td>
                 </tr>
               );
             })}</tbody>
@@ -1209,6 +1243,44 @@ const EnableSection=({partner,isAdmin})=>{
           })}
         </Modal>
       )}
+      {selPartnerEnable&&(()=>{
+        const pp=selPartnerEnable;
+        const ppCfg=TIER_CONFIG[pp.tier];
+        const ppEarned=COURSES.filter(c=>pp.courses.includes(c.id)).reduce((s,c)=>s+c.pts,0);
+        const ppCerts=COURSES.filter(c=>c.cert&&pp.courses.includes(c.id)).length;
+        return(
+          <Modal title={`${pp.name} — Training Detail`} subtitle={`${pp.tier} tier · ${pp.courses.length}/${COURSES.length} courses · ${ppEarned} pts from training`} onClose={()=>setSelPartnerEnable(null)}>
+            <div style={{display:"flex",gap:8,marginBottom:16}}>
+              {[{l:"Completed",v:`${pp.courses.length}/${COURSES.length}`,a:true},{l:"Certifications",v:`🏅 ${ppCerts}`},{l:"Points from Courses",v:`${ppEarned} pts`,a:true},{l:"Remaining",v:`${COURSES.filter(c=>!pp.courses.includes(c.id)).reduce((s,c)=>s+c.pts,0)} pts`}].map(r=>(
+                <div key={r.l} style={{flex:1,background:r.a?C.greenLight:C.pageGrey,borderRadius:8,padding:"10px 12px",border:`1px solid ${r.a?C.greenMid:C.cardBorder}`,textAlign:"center"}}>
+                  <div style={{fontSize:9,color:r.a?C.greenDark:C.textLight,textTransform:"uppercase",letterSpacing:.6,fontFamily:"'DM Sans',sans-serif",marginBottom:4}}>{r.l}</div>
+                  <div style={{fontSize:16,fontWeight:800,color:r.a?C.green:C.text,fontFamily:"'Sora',sans-serif"}}>{r.v}</div>
+                </div>
+              ))}
+            </div>
+            <Bar val={pp.courses.length} max={COURSES.length}/>
+            <div style={{marginTop:16}}>
+              {COURSES.map((c,i)=>{
+                const done=pp.courses.includes(c.id);
+                return(
+                  <div key={c.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 0",borderBottom:i<COURSES.length-1?`1px solid ${C.cardBorder}`:"none",opacity:done?1:.55}}>
+                    <div style={{display:"flex",alignItems:"center",gap:10}}>
+                      <div style={{width:30,height:30,borderRadius:6,background:done?C.greenLight:C.pageGrey,display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,flexShrink:0}}>{done?"✅":"📖"}</div>
+                      <div>
+                        <div style={{fontWeight:600,fontSize:13,color:C.text,fontFamily:"'DM Sans',sans-serif"}}>{c.title}</div>
+                        <div style={{fontSize:11,color:C.textMid,fontFamily:"'DM Sans',sans-serif"}}>{c.dur}{c.cert?` · 🏅 cert`:""}</div>
+                      </div>
+                    </div>
+                    <span style={{fontSize:11,fontWeight:700,padding:"2px 10px",borderRadius:99,fontFamily:"'DM Sans',sans-serif",background:done?C.greenLight:C.goldLight,color:done?C.greenDark:"#7A4800",border:`1px solid ${done?C.green+"30":C.gold+"30"}`}}>
+                      {done?"✓ Completed":`+${c.pts} pts`}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </Modal>
+        );
+      })()}
     </div>
   );
 };
