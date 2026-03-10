@@ -2017,12 +2017,11 @@ const SupportSection=({partner,isAdmin})=>{
       {open&&(
         <Card style={{marginBottom:14}}>
           <SectionDivider title="New Case"/>
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12}}>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
             <div style={{gridColumn:"1/-1"}}><FLabel t="Title"/><FInput v={form.title} onChange={set("title")} ph="Describe the issue..."/></div>
             <div><FLabel t="Category"/><FSelect v={form.cat} onChange={set("cat")} opts={["Technical","Feature","Onboarding","Billing"]}/></div>
             <div><FLabel t="Priority"/><FSelect v={form.priority} onChange={set("priority")} opts={["Low","Medium","High"]}/></div>
-            <div><FLabel t="Description"/></div>
-            <div style={{gridColumn:"1/-1"}}><FTextarea v={form.description} onChange={set("description")} ph="Full description..."/></div>
+            <div style={{gridColumn:"1/-1"}}><FLabel t="Description"/><FTextarea v={form.description} onChange={set("description")} ph="Full description..."/></div>
             <div style={{gridColumn:"1/-1"}}><BtnP ch="Submit Case" full onClick={()=>{if(!form.title)return;dispatch({type:"ADD_CASE",payload:{partnerId:partner.id,title:form.title,cat:form.cat,priority:form.priority,description:form.description,created:new Date().toISOString().slice(0,10)}});setForm({title:"",cat:"Technical",priority:"Medium",description:""});setOpen(false);}}/></div>
           </div>
         </Card>
