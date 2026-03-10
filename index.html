@@ -687,6 +687,7 @@ const PlanSection=({partner,isAdmin})=>{
   const {state,dispatch}=useContext(AppCtx);
   const [modal,setModal]=useState(null);
   const [selPartner,setSelPartner]=useState(null);
+  const [selQ,setSelQ]=useState(null);
   const cfg=TIER_CONFIG[partner.tier];
   const customers=state.customers[partner.id]||[];
   const leads=state.leads.filter(l=>l.partnerId===partner.id);
@@ -699,6 +700,19 @@ const PlanSection=({partner,isAdmin})=>{
     {key:"leads",label:"Leads Submitted",icon:"📋",targets:{Bronze:3,Silver:6,Gold:10},unit:"leads"},
   ];
   const resolvedTargets=Object.fromEntries(GOALS.map(g=>[g.key,partnerGoals[g.key]??g.targets[partner.tier]]));
+  const exportCSV=()=>{
+    const rows=[
+      ["Partner","Tier","Points","Kickback %","Clients","YTD Commission (NOK)","Region","Certified"],
+      ...state.partners.map(p=>{
+        const cust=state.customers[p.id]||[];
+        return[p.name,p.tier,p.points,TIER_CONFIG[p.tier].kickback+"%",cust.length,p.ytdKickback,p.region,p.certified?"Yes":"No"];
+      })
+    ];
+    const csv=rows.map(r=>r.map(v=>`"${v}"`).join(",")).join("\n");
+    const blob=new Blob([csv],{type:"text/csv"});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement("a");a.href=url;a.download="partners-export.csv";a.click();URL.revokeObjectURL(url);
+  };
   return (
     <div>
       {/* Hero */}
@@ -741,8 +755,8 @@ const PlanSection=({partner,isAdmin})=>{
           return <Metric key={g.key} label={g.label} icon={g.icon} accent={pct>=80}
             value={g.key==="revenue"?fmtNOK(curr):curr}
             sub={`Target: ${g.key==="revenue"?fmtNOK(target):target} · ${pct}%`}
-            onClick={g.key==="clients"?()=>setModal("customers"):g.key==="leads"?()=>setModal("leads"):undefined}
-            active={modal===("customers"&&g.key==="clients")||(modal==="leads"&&g.key==="leads")}/>;
+            onClick={g.key==="clients"?()=>setModal("customers"):g.key==="leads"?()=>setModal("leads"):g.key==="ba"?()=>setModal("va"):()=>setModal("revenue")}
+            active={(modal==="customers"&&g.key==="clients")||(modal==="leads"&&g.key==="leads")||(modal==="va"&&g.key==="ba")||(modal==="revenue"&&g.key==="revenue")}/>;
         })}
       </div>
       {/* Goals detail */}
@@ -760,17 +774,17 @@ const PlanSection=({partner,isAdmin})=>{
             const target=resolvedTargets[g.key];
             const pct=Math.min(100,Math.round((curr/target)*100));
             const disp=g.key==="revenue"?`${(curr/1e6).toFixed(1)}M / ${(target/1e6).toFixed(1)}M NOK`:`${curr} / ${target} ${g.unit}`;
-            const clickable=g.key==="clients"||g.key==="leads";
+            const modalKey=g.key==="clients"?"customers":g.key==="leads"?"leads":g.key==="ba"?"va":"revenue";
             return (
-              <div key={g.key} style={{padding:"12px 0",borderBottom:i<GOALS.length-1?`1px solid ${C.cardBorder}`:"none",cursor:clickable?"pointer":"default",borderRadius:6,margin:"0 -4px",padding:"12px 4px"}}
-                onClick={clickable?()=>setModal(g.key==="clients"?"customers":"leads"):undefined}
-                onMouseEnter={e=>{if(clickable)e.currentTarget.style.background=C.rowHover;}}
+              <div key={g.key} style={{borderBottom:i<GOALS.length-1?`1px solid ${C.cardBorder}`:"none",cursor:"pointer",borderRadius:6,margin:"0 -4px",padding:"12px 4px"}}
+                onClick={()=>setModal(modalKey)}
+                onMouseEnter={e=>e.currentTarget.style.background=C.rowHover}
                 onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:7}}>
                   <div style={{display:"flex",alignItems:"center",gap:8}}>
                     <span style={{fontSize:16}}>{g.icon}</span>
                     <span style={{fontWeight:600,fontSize:13,color:C.text,fontFamily:"'DM Sans',sans-serif"}}>{g.label}</span>
-                    {clickable&&<span style={{fontSize:9,color:C.green,fontWeight:700,background:C.greenLight,padding:"1px 6px",borderRadius:99,fontFamily:"'DM Sans',sans-serif"}}>drill in ↗</span>}
+                    <span style={{fontSize:9,color:C.green,fontWeight:700,background:C.greenLight,padding:"1px 6px",borderRadius:99,fontFamily:"'DM Sans',sans-serif"}}>drill in ↗</span>
                   </div>
                   <div style={{display:"flex",alignItems:"center",gap:10}}>
                     <span style={{fontSize:11,color:C.textMid,fontFamily:"'DM Sans',sans-serif"}}>{disp}</span>
@@ -801,7 +815,10 @@ const PlanSection=({partner,isAdmin})=>{
             const qNames=["Jan – Mar","Apr – Jun","Jul – Sep","Oct – Dec"];
             const isCurrent=q===1;
             return(
-              <div key={q} style={{padding:"16px 14px",borderRight:q<4?`1px solid ${C.cardBorder}`:"none",background:isCurrent?C.greenLight:"transparent",transition:"background .2s"}}>
+              <div key={q} style={{padding:"16px 14px",borderRight:q<4?`1px solid ${C.cardBorder}`:"none",background:isCurrent?C.greenLight:"transparent",transition:"background .2s",cursor:"pointer"}}
+                onClick={()=>setSelQ({q,months,qCust,qLeads,qWins,qClTarget,qLeadTarget,qNames,isCurrent})}
+                onMouseEnter={e=>e.currentTarget.style.background=isCurrent?"#d4f0e6":C.rowHover}
+                onMouseLeave={e=>e.currentTarget.style.background=isCurrent?C.greenLight:"transparent"}>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
                   <span style={{fontSize:13,fontWeight:800,color:isCurrent?C.green:C.textMid,fontFamily:"'Sora',sans-serif"}}>Q{q}</span>
                   {isCurrent&&<span style={{fontSize:9,background:C.green,color:"#fff",borderRadius:99,padding:"1px 7px",fontWeight:700,fontFamily:"'DM Sans',sans-serif"}}>NOW</span>}
@@ -834,7 +851,7 @@ const PlanSection=({partner,isAdmin})=>{
         <Card noPad>
           <div style={{padding:"13px 18px",borderBottom:`1px solid ${C.cardBorder}`,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
             <h3 style={{margin:0,fontSize:13,fontWeight:700,color:C.text,fontFamily:"'Sora',sans-serif"}}>All Partners</h3>
-            <BtnG ch="Export CSV" small/>
+            <BtnG ch="Export CSV" small onClick={exportCSV}/>
           </div>
           <div style={{overflowX:"auto"}}>
             <table style={{width:"100%",borderCollapse:"collapse"}}>
@@ -865,8 +882,130 @@ const PlanSection=({partner,isAdmin})=>{
       )}
       {modal==="editgoals"&&<GoalEditModal partner={partner} onClose={()=>setModal(null)}/>}
       {modal==="customers"&&<CustomersModal partner={partner} onClose={()=>setModal(null)}/>}
-      {modal==="leads"&&<div style={{position:"fixed",inset:0,background:"rgba(22,33,58,.6)",zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center"}} onClick={e=>{if(e.target===e.currentTarget)setModal(null);}}><div style={{background:C.white,borderRadius:12,padding:0,maxWidth:800,width:"100%",maxHeight:"80vh",overflow:"auto",margin:"0 20px"}}><div style={{padding:"16px 24px",borderBottom:`1px solid ${C.cardBorder}`,display:"flex",justifyContent:"space-between",alignItems:"center"}}><h2 style={{margin:0,fontSize:16,fontWeight:800,color:C.text,fontFamily:"'Sora',sans-serif"}}>Lead Pipeline — {partner.name}</h2><button onClick={()=>setModal(null)} style={{background:C.pageGrey,border:"none",borderRadius:6,width:30,height:30,cursor:"pointer",fontSize:16,color:C.textMid}}>✕</button></div><div style={{padding:24}}><LeadTable leads={leads} partner={partner}/></div></div></div>}
+      {modal==="leads"&&<div style={{position:"fixed",inset:0,background:"rgba(22,33,58,.6)",zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center",backdropFilter:"blur(6px)"}} onClick={e=>{if(e.target===e.currentTarget)setModal(null);}}><div style={{background:C.white,borderRadius:12,padding:0,maxWidth:800,width:"100%",maxHeight:"80vh",overflow:"auto",margin:"0 20px"}}><div style={{padding:"16px 24px",borderBottom:`1px solid ${C.cardBorder}`,display:"flex",justifyContent:"space-between",alignItems:"center"}}><h2 style={{margin:0,fontSize:16,fontWeight:800,color:C.text,fontFamily:"'Sora',sans-serif"}}>Lead Pipeline — {partner.name}</h2><button onClick={()=>setModal(null)} style={{background:C.pageGrey,border:"none",borderRadius:6,width:30,height:30,cursor:"pointer",fontSize:16,color:C.textMid}}>✕</button></div><div style={{padding:24}}><LeadTable leads={leads} partner={partner}/></div></div></div>}
       {modal==="tiercompare"&&<TierCompareModal partner={partner} onClose={()=>setModal(null)}/>}
+      {modal==="va"&&(()=>{
+        const active=customers.filter(c=>c.status==="Active");
+        const vaCount=goalCurrent.ba;
+        const vaTarget=resolvedTargets.ba;
+        const vaActive=active.slice(0,vaCount);
+        const vaPending=active.slice(vaCount);
+        const inactive=customers.filter(c=>c.status!=="Active");
+        return(
+          <Modal title="Voucher Automation Accounts" subtitle={`${vaCount} / ${vaTarget} activated · ${Math.round((vaCount/Math.max(1,vaTarget))*100)}% of target`} onClose={()=>setModal(null)}>
+            <div style={{display:"flex",gap:8,marginBottom:16}}>
+              <div style={{flex:1,background:C.greenLight,borderRadius:8,padding:"12px 14px",border:`1px solid ${C.greenMid}`,textAlign:"center"}}>
+                <div style={{fontSize:22,fontWeight:800,color:C.green,fontFamily:"'Sora',sans-serif"}}>{vaCount}</div>
+                <div style={{fontSize:10,color:C.greenDark,fontWeight:700,textTransform:"uppercase",letterSpacing:.6,fontFamily:"'DM Sans',sans-serif"}}>VA Active</div>
+              </div>
+              <div style={{flex:1,background:C.pageGrey,borderRadius:8,padding:"12px 14px",border:`1px solid ${C.cardBorder}`,textAlign:"center"}}>
+                <div style={{fontSize:22,fontWeight:800,color:C.textMid,fontFamily:"'Sora',sans-serif"}}>{vaPending.length}</div>
+                <div style={{fontSize:10,color:C.textLight,fontWeight:700,textTransform:"uppercase",letterSpacing:.6,fontFamily:"'DM Sans',sans-serif"}}>Not Yet Activated</div>
+              </div>
+              <div style={{flex:1,background:C.goldLight,borderRadius:8,padding:"12px 14px",border:`1px solid ${C.gold}30`,textAlign:"center"}}>
+                <div style={{fontSize:22,fontWeight:800,color:"#7A4800",fontFamily:"'Sora',sans-serif"}}>{vaTarget}</div>
+                <div style={{fontSize:10,color:"#7A4800",fontWeight:700,textTransform:"uppercase",letterSpacing:.6,fontFamily:"'DM Sans',sans-serif"}}>Annual Target</div>
+              </div>
+            </div>
+            <Bar val={vaCount} max={vaTarget}/>
+            <div style={{marginTop:16}}>
+              {[...vaActive.map(c=>({...c,va:true})),...vaPending.map(c=>({...c,va:false})),...inactive.map(c=>({...c,va:false}))].map((c,i,arr)=>(
+                <div key={c.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 0",borderBottom:i<arr.length-1?`1px solid ${C.cardBorder}`:"none"}}>
+                  <div>
+                    <div style={{fontWeight:600,fontSize:13,color:C.text,fontFamily:"'DM Sans',sans-serif"}}>{c.name}</div>
+                    <div style={{fontSize:11,color:C.textMid,fontFamily:"'DM Sans',sans-serif"}}>{c.industry} · {c.size}</div>
+                  </div>
+                  <span style={{fontSize:11,fontWeight:700,padding:"2px 10px",borderRadius:99,fontFamily:"'DM Sans',sans-serif",background:c.va?C.greenLight:c.status==="Active"?C.goldLight:C.pageGrey,color:c.va?C.greenDark:c.status==="Active"?"#7A4800":C.textMid,border:`1px solid ${c.va?C.green+"40":c.status==="Active"?C.gold+"40":C.cardBorder}`}}>
+                    {c.va?"✅ VA Active":c.status==="Active"?"⏳ Not activated":c.status}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </Modal>
+        );
+      })()}
+      {modal==="revenue"&&(()=>{
+        const sorted=[...customers].sort((a,b)=>b.arr-a.arr);
+        const total=sorted.reduce((s,c)=>s+c.arr,0);
+        return(
+          <Modal title="Revenue Breakdown" subtitle={`Total ARR: ${fmtNOK(total)} · Target: ${fmtNOK(resolvedTargets.revenue)} · ${Math.round((partner.revenue/resolvedTargets.revenue)*100)}%`} onClose={()=>setModal(null)}>
+            <div style={{display:"flex",gap:8,marginBottom:16}}>
+              <div style={{flex:1,background:C.greenLight,borderRadius:8,padding:"12px 14px",border:`1px solid ${C.greenMid}`,textAlign:"center"}}>
+                <div style={{fontSize:20,fontWeight:800,color:C.green,fontFamily:"'Sora',sans-serif"}}>{fmtNOK(partner.revenue)}</div>
+                <div style={{fontSize:10,color:C.greenDark,fontWeight:700,textTransform:"uppercase",letterSpacing:.6,fontFamily:"'DM Sans',sans-serif"}}>YTD Revenue</div>
+              </div>
+              <div style={{flex:1,background:C.pageGrey,borderRadius:8,padding:"12px 14px",border:`1px solid ${C.cardBorder}`,textAlign:"center"}}>
+                <div style={{fontSize:20,fontWeight:800,color:C.textMid,fontFamily:"'Sora',sans-serif"}}>{fmtNOK(resolvedTargets.revenue)}</div>
+                <div style={{fontSize:10,color:C.textLight,fontWeight:700,textTransform:"uppercase",letterSpacing:.6,fontFamily:"'DM Sans',sans-serif"}}>Annual Target</div>
+              </div>
+              <div style={{flex:1,background:C.goldLight,borderRadius:8,padding:"12px 14px",border:`1px solid ${C.gold}30`,textAlign:"center"}}>
+                <div style={{fontSize:20,fontWeight:800,color:"#7A4800",fontFamily:"'Sora',sans-serif"}}>{fmtNOK(Math.max(0,resolvedTargets.revenue-partner.revenue))}</div>
+                <div style={{fontSize:10,color:"#7A4800",fontWeight:700,textTransform:"uppercase",letterSpacing:.6,fontFamily:"'DM Sans',sans-serif"}}>Remaining</div>
+              </div>
+            </div>
+            <Bar val={partner.revenue} max={resolvedTargets.revenue}/>
+            <div style={{marginTop:16}}>
+              <table style={{width:"100%",borderCollapse:"collapse"}}>
+                <thead><tr><TH ch="Client"/><TH ch="Industry"/><TH ch="ARR (NOK)" right/><TH ch="Status"/></tr></thead>
+                <tbody>{sorted.map((c,i)=>(
+                  <tr key={c.id} onMouseEnter={e=>e.currentTarget.style.background=C.rowHover} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+                    <TD bold>{c.name}</TD>
+                    <TD>{c.industry}</TD>
+                    <td style={{padding:"10px 12px",textAlign:"right",borderBottom:`1px solid ${C.cardBorder}`,fontSize:13,fontWeight:700,color:C.green,fontFamily:"'Sora',sans-serif"}}>{fmtNOK(c.arr)}</td>
+                    <TD><Pill s={c.status}/></TD>
+                  </tr>
+                ))}</tbody>
+              </table>
+            </div>
+          </Modal>
+        );
+      })()}
+      {selQ&&(()=>{
+        const {q,qCust,qLeads,qWins,qClTarget,qLeadTarget,qNames,isCurrent}=selQ;
+        const wonLeads=qLeads.filter(l=>l.status==="Closed Won");
+        return(
+          <Modal title={`Q${q} — ${qNames[q-1]}`} subtitle={isCurrent?"Active quarter":"Planned"} onClose={()=>setSelQ(null)}>
+            <div style={{display:"flex",gap:8,marginBottom:16}}>
+              {[{l:"Clients Added",v:qCust.length,t:qClTarget,icon:"👥"},{l:"Leads Submitted",v:qLeads.length,t:qLeadTarget,icon:"📋"},{l:"Deals Won",v:qWins,t:Math.max(1,Math.round(resolvedTargets.leads/8)),icon:"🎯"}].map(m=>(
+                <div key={m.l} style={{flex:1,background:m.v>=m.t?C.greenLight:C.pageGrey,borderRadius:8,padding:"12px 10px",border:`1px solid ${m.v>=m.t?C.green+"40":C.cardBorder}`,textAlign:"center"}}>
+                  <div style={{fontSize:20}}>{m.icon}</div>
+                  <div style={{fontSize:20,fontWeight:800,color:m.v>=m.t?C.green:C.text,fontFamily:"'Sora',sans-serif"}}>{m.v}<span style={{fontSize:12,color:C.textMid,fontWeight:400}}>/{m.t}</span></div>
+                  <div style={{fontSize:10,color:C.textLight,fontWeight:700,textTransform:"uppercase",letterSpacing:.5,fontFamily:"'DM Sans',sans-serif"}}>{m.l}</div>
+                </div>
+              ))}
+            </div>
+            {qCust.length>0&&<>
+              <div style={{fontWeight:700,fontSize:12,color:C.text,fontFamily:"'Sora',sans-serif",marginBottom:8}}>Clients added this quarter</div>
+              {qCust.map((c,i)=>(
+                <div key={c.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"9px 0",borderBottom:i<qCust.length-1?`1px solid ${C.cardBorder}`:"none"}}>
+                  <div style={{fontWeight:600,fontSize:13,color:C.text,fontFamily:"'DM Sans',sans-serif"}}>{c.name}</div>
+                  <div style={{display:"flex",gap:8,alignItems:"center"}}>
+                    <span style={{fontSize:12,color:C.green,fontWeight:700,fontFamily:"'Sora',sans-serif"}}>{fmtNOK(c.arr)}</span>
+                    <Pill s={c.status}/>
+                  </div>
+                </div>
+              ))}
+            </>}
+            {qLeads.length>0&&<>
+              <div style={{fontWeight:700,fontSize:12,color:C.text,fontFamily:"'Sora',sans-serif",margin:"16px 0 8px"}}>Leads this quarter</div>
+              {qLeads.map((l,i)=>(
+                <div key={l.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"9px 0",borderBottom:i<qLeads.length-1?`1px solid ${C.cardBorder}`:"none"}}>
+                  <div style={{fontWeight:600,fontSize:13,color:C.text,fontFamily:"'DM Sans',sans-serif"}}>{l.company}</div>
+                  <div style={{display:"flex",gap:8,alignItems:"center"}}>
+                    <span style={{fontSize:12,color:C.textMid,fontFamily:"'DM Sans',sans-serif"}}>{l.type}</span>
+                    <Pill s={l.status}/>
+                  </div>
+                </div>
+              ))}
+            </>}
+            {qCust.length===0&&qLeads.length===0&&(
+              <div style={{textAlign:"center",padding:"24px 0",color:C.textLight,fontSize:13,fontFamily:"'DM Sans',sans-serif"}}>
+                {isCurrent?"No activity recorded yet this quarter.":"This quarter hasn't started yet. Targets are set based on annual goals split evenly."}
+              </div>
+            )}
+          </Modal>
+        );
+      })()}
       {selPartner&&<PartnerProfileModal partner={selPartner} onClose={()=>setSelPartner(null)} onNavigate={(view)=>console.log(view)}/>}
     </div>
   );
