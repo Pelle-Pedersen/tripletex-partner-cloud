@@ -1534,17 +1534,31 @@ const SupportSection=({partner,isAdmin})=>{
   const {state,dispatch}=useContext(AppCtx);
   const [open,setOpen]=useState(false);
   const [selCase,setSelCase]=useState(null);
+  const [statusFilter,setStatusFilter]=useState(null);
+  const [showSC,setShowSC]=useState(false);
   const [form,setForm]=useState({title:"",cat:"Technical",priority:"Medium",description:""});
   const set=k=>e=>setForm(f=>({...f,[k]:e.target.value}));
   const myCases=isAdmin?state.cases:state.cases.filter(c=>c.partnerId===partner.id);
+  const filteredCases=statusFilter?myCases.filter(c=>c.status===statusFilter):myCases;
+  const toggleFilter=s=>setStatusFilter(f=>f===s?null:s);
+
+  const exportCasesCSV=()=>{
+    const rows=[["Case #","Title","Partner","Category","Priority","Status","Created"],...myCases.map(c=>{
+      const pName=state.partners.find(p=>p.id===c.partnerId)?.name||"";
+      return[c.num,c.title,pName,c.cat,c.priority,c.status,c.created];
+    })];
+    const csv=rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(",")).join("\n");
+    const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));a.download="support-cases.csv";a.click();
+  };
+
   return(
     <div>
       <div style={{display:"flex",gap:10,marginBottom:18,flexWrap:"wrap"}}>
-        <Metric label="Open" value={myCases.filter(c=>c.status==="Open").length} icon="🔴"/>
-        <Metric label="In Progress" value={myCases.filter(c=>c.status==="In Progress").length} icon="🟡"/>
-        <Metric label="Resolved" value={myCases.filter(c=>c.status==="Resolved").length} icon="🟢" accent/>
+        <Metric label="Open" value={myCases.filter(c=>c.status==="Open").length} icon="🔴" onClick={()=>toggleFilter("Open")} active={statusFilter==="Open"}/>
+        <Metric label="In Progress" value={myCases.filter(c=>c.status==="In Progress").length} icon="🟡" onClick={()=>toggleFilter("In Progress")} active={statusFilter==="In Progress"}/>
+        <Metric label="Resolved" value={myCases.filter(c=>c.status==="Resolved").length} icon="🟢" accent onClick={()=>toggleFilter("Resolved")} active={statusFilter==="Resolved"}/>
         <Metric label="Avg. Response" value="4h" sub="this month" icon="⚡"/>
-        {isAdmin&&<Metric label="Total Cases" value={myCases.length} icon="📋"/>}
+        {isAdmin&&<Metric label="Total Cases" value={myCases.length} icon="📋" onClick={()=>setStatusFilter(null)} active={!statusFilter}/>}
       </div>
       {!isAdmin&&(
         <div style={{background:C.greenLight,border:`1px solid ${C.greenMid}`,borderRadius:8,padding:"13px 18px",marginBottom:14,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
@@ -1569,19 +1583,25 @@ const SupportSection=({partner,isAdmin})=>{
         </Card>
       )}
       <Card noPad>
-        <div style={{padding:"13px 18px",borderBottom:`1px solid ${C.cardBorder}`,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-          <h3 style={{margin:0,fontSize:13,fontWeight:700,color:C.text,fontFamily:"'Sora',sans-serif"}}>Cases</h3>
-          {isAdmin&&<BtnG ch="Open in Service Cloud →" small/>}
+        <div style={{padding:"13px 18px",borderBottom:`1px solid ${C.cardBorder}`,display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:8}}>
+          <div style={{display:"flex",alignItems:"center",gap:10}}>
+            <h3 style={{margin:0,fontSize:13,fontWeight:700,color:C.text,fontFamily:"'Sora',sans-serif"}}>Cases</h3>
+            {statusFilter&&<span style={{background:C.blueLight,color:C.blue,borderRadius:99,padding:"2px 10px",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}} onClick={()=>setStatusFilter(null)}>Filtered: {statusFilter} ✕</span>}
+          </div>
+          <div style={{display:"flex",gap:8}}>
+            {isAdmin&&<BtnG ch="Open in Service Cloud →" small onClick={()=>setShowSC(true)}/>}
+            {isAdmin&&<BtnG ch="Export CSV" small onClick={exportCasesCSV}/>}
+          </div>
         </div>
         <div style={{overflowX:"auto"}}>
           <table style={{width:"100%",borderCollapse:"collapse"}}>
             <thead><tr><TH ch="Case #"/><TH ch="Title"/>{isAdmin&&<TH ch="Partner"/>}<TH ch="Cat"/><TH ch="Priority"/><TH ch="Status"/><TH ch="Created"/><TH ch=""/></tr></thead>
-            <tbody>{myCases.map(c=>{
+            <tbody>{filteredCases.map(c=>{
               const pName=state.partners.find(p=>p.id===c.partnerId)?.name||"";
               return(
                 <tr key={c.id} onMouseEnter={e=>e.currentTarget.style.background=C.rowHover} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
                   <td style={{padding:"10px 12px",borderBottom:`1px solid ${C.cardBorder}`}}><span style={{color:C.blue,fontWeight:600,fontSize:13,fontFamily:"monospace",cursor:"pointer"}} onClick={()=>setSelCase(c)}>{c.num}</span></td>
-                  <TD bold>{c.title}</TD>
+                  <td style={{padding:"10px 12px",borderBottom:`1px solid ${C.cardBorder}`,cursor:"pointer",color:C.text,fontWeight:600,fontSize:13,fontFamily:"'DM Sans',sans-serif"}} onClick={()=>setSelCase(c)}>{c.title}</td>
                   {isAdmin&&<TD>{pName}</TD>}
                   <td style={{padding:"10px 12px",borderBottom:`1px solid ${C.cardBorder}`}}><span style={{background:C.pageGrey,borderRadius:4,padding:"2px 7px",fontSize:11,fontWeight:600,fontFamily:"'DM Sans',sans-serif",color:C.textMid}}>{c.cat}</span></td>
                   <td style={{padding:"10px 12px",borderBottom:`1px solid ${C.cardBorder}`}}><span style={{fontWeight:700,fontSize:12,color:c.priority==="High"?C.red:c.priority==="Medium"?C.orange:C.textMid,fontFamily:"'DM Sans',sans-serif"}}>{c.priority}</span></td>
@@ -1595,6 +1615,23 @@ const SupportSection=({partner,isAdmin})=>{
         </div>
       </Card>
       {selCase&&<CaseDetailModal cas={selCase} partnerName={state.partners.find(p=>p.id===selCase.partnerId)?.name||""} onClose={()=>setSelCase(null)} isAdmin={isAdmin}/>}
+      {showSC&&(
+        <Modal title="Salesforce Service Cloud Integration" onClose={()=>setShowSC(false)}>
+          <div style={{display:"flex",flexDirection:"column",gap:14}}>
+            <div style={{background:C.blueLight,borderRadius:8,padding:"13px 16px",borderLeft:`4px solid ${C.blue}`}}>
+              <div style={{fontWeight:700,fontSize:13,color:C.blue,marginBottom:4,fontFamily:"'DM Sans',sans-serif"}}>Connected: Tripletex Service Cloud Org</div>
+              <div style={{fontSize:12,color:C.textMid,fontFamily:"'DM Sans',sans-serif"}}>All Partner Cloud cases are synced bi-directionally with Salesforce Service Cloud via connected app.</div>
+            </div>
+            {[{label:"Case sync",val:"Real-time via Platform Events"},{label:"Assignment",val:"Auto-routed by tier + category"},{label:"SLA tracking",val:"Salesforce Milestones"},{label:"Escalation",val:"Flow-triggered at 80% SLA breach"},{label:"Partner visibility",val:"Experience Cloud filtered view"}].map(r=>(
+              <div key={r.label} style={{display:"flex",justifyContent:"space-between",alignItems:"center",borderBottom:`1px solid ${C.cardBorder}`,paddingBottom:10}}>
+                <span style={{fontSize:12,color:C.textMid,fontFamily:"'DM Sans',sans-serif"}}>{r.label}</span>
+                <span style={{fontSize:12,fontWeight:600,color:C.text,fontFamily:"'DM Sans',sans-serif"}}>{r.val}</span>
+              </div>
+            ))}
+            <BtnP ch="Open Service Cloud Console →" onClick={()=>alert("Opens Salesforce Service Cloud in production")}/>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 };
@@ -1635,9 +1672,17 @@ const ChartWidget=({type,data,options,height=200})=>{
 /* ═══════════════════ ANALYTICS SECTION ═══════════════════ */
 const AnalyticsSection=({isAdmin,partner})=>{
   const {state}=useContext(AppCtx);
-  const viewPartners=isAdmin?state.partners:[partner];
-  const viewLeads=isAdmin?state.leads:state.leads.filter(l=>l.partnerId===partner.id);
-  const viewCustomers=isAdmin?Object.values(state.customers).flat():state.customers[partner.id]||[];
+  const [filterPartner,setFilterPartner]=useState("all");
+  const [modal,setModal]=useState(null); // "arr"|"leads"|"won"|"commission"
+
+  const basePartners=isAdmin?state.partners:[partner];
+  const viewPartners=isAdmin&&filterPartner!=="all"?basePartners.filter(p=>p.id===filterPartner):basePartners;
+  const viewLeads=isAdmin
+    ?(filterPartner==="all"?state.leads:state.leads.filter(l=>l.partnerId===filterPartner))
+    :state.leads.filter(l=>l.partnerId===partner.id);
+  const viewCustomers=isAdmin
+    ?(filterPartner==="all"?Object.values(state.customers).flat():(state.customers[filterPartner]||[]))
+    :(state.customers[partner.id]||[]);
 
   const totalARR=viewCustomers.reduce((s,c)=>s+c.arr,0);
   const totalYTD=viewPartners.reduce((s,p)=>s+p.ytdKickback,0);
@@ -1666,14 +1711,38 @@ const AnalyticsSection=({isAdmin,partner})=>{
   const tierData={labels:TIERS,datasets:[{data:tierCounts,backgroundColor:[TIER_CONFIG.Bronze.color+"BB",TIER_CONFIG.Silver.color+"BB",TIER_CONFIG.Gold.color+"BB"],borderColor:[TIER_CONFIG.Bronze.color,TIER_CONFIG.Silver.color,TIER_CONFIG.Gold.color],borderWidth:2}]};
   const tierOptions={responsive:true,plugins:{legend:{position:"bottom",labels:{font:{family:"'DM Sans',sans-serif",size:11},padding:10}}},cutout:"60%"};
 
+  const exportCSV=()=>{
+    const rows=[["Partner","Tier","ARR (NOK)","Leads","Closed Won","YTD Commission (NOK)"],...viewPartners.map(p=>{
+      const pCustomers=state.customers[p.id]||[];
+      const pLeads=state.leads.filter(l=>l.partnerId===p.id);
+      return[p.name,p.tier,pCustomers.reduce((s,c)=>s+c.arr,0),pLeads.length,pLeads.filter(l=>l.status==="Closed Won").length,p.ytdKickback];
+    })];
+    const csv=rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(",")).join("\n");
+    const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));a.download="analytics-export.csv";a.click();
+  };
+
   return(
     <div>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12,flexWrap:"wrap",gap:8}}>
+        <div style={{display:"flex",gap:8,alignItems:"center"}}>
+          {isAdmin&&(
+            <>
+              <span style={{fontSize:12,color:C.textMid,fontFamily:"'DM Sans',sans-serif"}}>Filter partner:</span>
+              <select value={filterPartner} onChange={e=>setFilterPartner(e.target.value)} style={{fontSize:12,padding:"5px 10px",borderRadius:6,border:`1px solid ${C.cardBorder}`,background:C.white,color:C.text,fontFamily:"'DM Sans',sans-serif",cursor:"pointer"}}>
+                <option value="all">All partners</option>
+                {state.partners.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
+              </select>
+            </>
+          )}
+        </div>
+        {isAdmin&&<BtnG ch="Export CSV" small onClick={exportCSV}/>}
+      </div>
       <div style={{display:"flex",gap:10,marginBottom:16,flexWrap:"wrap"}}>
-        <Metric label="Total ARR" value={fmtNOK(totalARR)} icon="💰" accent/>
-        <Metric label="Total Leads" value={viewLeads.length} icon="📋"/>
-        <Metric label="Closed Won" value={wonLeads} sub={`${convRate}% conversion`} icon="🎯" accent/>
-        <Metric label="YTD Commission" value={fmtNOK(totalYTD)} icon="💸" accent/>
-        {isAdmin&&<Metric label="Partners" value={viewPartners.length} icon="🤝"/>}
+        <Metric label="Total ARR" value={fmtNOK(totalARR)} icon="💰" accent onClick={()=>setModal("arr")}/>
+        <Metric label="Total Leads" value={viewLeads.length} icon="📋" onClick={()=>setModal("leads")}/>
+        <Metric label="Closed Won" value={wonLeads} sub={`${convRate}% conversion`} icon="🎯" accent onClick={()=>setModal("won")}/>
+        <Metric label="YTD Commission" value={fmtNOK(totalYTD)} icon="💸" accent onClick={()=>setModal("commission")}/>
+        {isAdmin&&<Metric label="Partners" value={viewPartners.length} icon="🤝" onClick={()=>setModal("partners")}/>}
       </div>
       <div style={{display:"grid",gridTemplateColumns:isAdmin?"2fr 1fr":"3fr 1fr",gap:14,marginBottom:14}}>
         <Card>
@@ -1697,6 +1766,131 @@ const AnalyticsSection=({isAdmin,partner})=>{
           </Card>
         )}
       </div>
+
+      {modal==="arr"&&(
+        <Modal title={isAdmin?"ARR Breakdown by Partner":"Client ARR Breakdown"} onClose={()=>setModal(null)}>
+          <div style={{display:"flex",flexDirection:"column",gap:8}}>
+            {isAdmin
+              ?viewPartners.map(p=>{const arr=(state.customers[p.id]||[]).reduce((s,c)=>s+c.arr,0);const pct=totalARR?Math.round((arr/totalARR)*100):0;return(
+                <div key={p.id} style={{borderBottom:`1px solid ${C.cardBorder}`,paddingBottom:10}}>
+                  <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
+                    <span style={{fontSize:12,fontWeight:700,color:C.text,fontFamily:"'DM Sans',sans-serif"}}>{p.name}</span>
+                    <span style={{fontSize:12,fontWeight:700,color:C.green,fontFamily:"'DM Sans',sans-serif"}}>{fmtNOK(arr)} <span style={{color:C.textMid,fontWeight:400}}>({pct}%)</span></span>
+                  </div>
+                  <div style={{background:C.pageGrey,borderRadius:99,height:6}}><div style={{width:`${pct}%`,background:TIER_CONFIG[p.tier].color,borderRadius:99,height:6}}/></div>
+                </div>
+              );}):
+              viewCustomers.sort((a,b)=>b.arr-a.arr).map(c=>{const pct=totalARR?Math.round((c.arr/totalARR)*100):0;return(
+                <div key={c.id} style={{display:"flex",justifyContent:"space-between",borderBottom:`1px solid ${C.cardBorder}`,paddingBottom:8}}>
+                  <span style={{fontSize:12,color:C.text,fontFamily:"'DM Sans',sans-serif"}}>{c.name}</span>
+                  <span style={{fontSize:12,fontWeight:700,color:C.green,fontFamily:"'DM Sans',sans-serif"}}>{fmtNOK(c.arr)} <span style={{color:C.textMid,fontWeight:400}}>({pct}%)</span></span>
+                </div>
+              );})
+            }
+            <div style={{display:"flex",justifyContent:"space-between",paddingTop:4}}>
+              <span style={{fontSize:13,fontWeight:700,color:C.text,fontFamily:"'DM Sans',sans-serif"}}>Total</span>
+              <span style={{fontSize:13,fontWeight:700,color:C.green,fontFamily:"'DM Sans',sans-serif"}}>{fmtNOK(totalARR)}</span>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {modal==="leads"&&(
+        <Modal title="Lead Pipeline Breakdown" onClose={()=>setModal(null)}>
+          <div style={{display:"flex",flexDirection:"column",gap:10}}>
+            {statuses.map((s,i)=>{const cnt=viewLeads.filter(l=>l.status===s).length;const pct=viewLeads.length?Math.round((cnt/viewLeads.length)*100):0;return(
+              <div key={s} style={{borderBottom:`1px solid ${C.cardBorder}`,paddingBottom:10}}>
+                <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
+                  <span style={{fontSize:12,fontWeight:700,color:C.text,fontFamily:"'DM Sans',sans-serif"}}>{s}</span>
+                  <span style={{fontSize:12,fontWeight:700,fontFamily:"'DM Sans',sans-serif",color:statusColors[i]}}>{cnt} <span style={{color:C.textMid,fontWeight:400}}>({pct}%)</span></span>
+                </div>
+                <div style={{background:C.pageGrey,borderRadius:99,height:6}}><div style={{width:`${pct}%`,background:statusColors[i],borderRadius:99,height:6}}/></div>
+              </div>
+            );})}
+            <div style={{display:"flex",justifyContent:"space-between",paddingTop:4}}>
+              <span style={{fontSize:13,fontWeight:700,color:C.text,fontFamily:"'DM Sans',sans-serif"}}>Total leads</span>
+              <span style={{fontSize:13,fontWeight:700,color:C.text,fontFamily:"'DM Sans',sans-serif"}}>{viewLeads.length}</span>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {modal==="won"&&(
+        <Modal title="Closed Won Deals" onClose={()=>setModal(null)}>
+          <div style={{display:"flex",flexDirection:"column",gap:8}}>
+            {viewLeads.filter(l=>l.status==="Closed Won").length===0&&<div style={{color:C.textMid,fontSize:13,fontFamily:"'DM Sans',sans-serif"}}>No closed won deals yet.</div>}
+            {viewLeads.filter(l=>l.status==="Closed Won").map(l=>{
+              const pName=state.partners.find(p=>p.id===l.partnerId)?.name||partner?.name||"";
+              return(
+                <div key={l.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",borderBottom:`1px solid ${C.cardBorder}`,paddingBottom:10}}>
+                  <div>
+                    <div style={{fontSize:12,fontWeight:700,color:C.text,fontFamily:"'DM Sans',sans-serif"}}>{l.company}</div>
+                    {isAdmin&&<div style={{fontSize:11,color:C.textMid,fontFamily:"'DM Sans',sans-serif"}}>{pName}</div>}
+                  </div>
+                  <div style={{textAlign:"right"}}>
+                    <div style={{fontSize:11,color:C.textMid,fontFamily:"'DM Sans',sans-serif"}}>{l.date}</div>
+                    <span style={{background:C.greenLight,color:C.green,borderRadius:4,padding:"1px 7px",fontSize:11,fontWeight:700,fontFamily:"'DM Sans',sans-serif"}}>✓ Won</span>
+                  </div>
+                </div>
+              );
+            })}
+            <div style={{paddingTop:4,fontSize:12,color:C.textMid,fontFamily:"'DM Sans',sans-serif"}}>Conversion rate: <strong style={{color:C.text}}>{convRate}%</strong> ({wonLeads} of {viewLeads.length} leads)</div>
+          </div>
+        </Modal>
+      )}
+
+      {modal==="commission"&&(
+        <Modal title="YTD Commission Details" onClose={()=>setModal(null)}>
+          <div style={{display:"flex",flexDirection:"column",gap:8}}>
+            {isAdmin
+              ?viewPartners.map(p=>(
+                <div key={p.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",borderBottom:`1px solid ${C.cardBorder}`,paddingBottom:10}}>
+                  <div>
+                    <div style={{fontSize:12,fontWeight:700,color:C.text,fontFamily:"'DM Sans',sans-serif"}}>{p.name}</div>
+                    <div style={{fontSize:11,color:C.textMid,fontFamily:"'DM Sans',sans-serif"}}>{TIER_CONFIG[p.tier].kickback}% kickback · {p.tier}</div>
+                  </div>
+                  <span style={{fontSize:13,fontWeight:700,color:C.green,fontFamily:"'DM Sans',sans-serif"}}>{fmtNOK(p.ytdKickback)}</span>
+                </div>
+              ))
+              :[partner].map(p=>(
+                <div key={p.id} style={{display:"flex",flexDirection:"column",gap:10}}>
+                  <div style={{display:"flex",justifyContent:"space-between"}}><span style={{fontSize:12,color:C.textMid,fontFamily:"'DM Sans',sans-serif"}}>Kickback rate</span><span style={{fontSize:12,fontWeight:700,color:C.text,fontFamily:"'DM Sans',sans-serif"}}>{TIER_CONFIG[p.tier].kickback}%</span></div>
+                  <div style={{display:"flex",justifyContent:"space-between"}}><span style={{fontSize:12,color:C.textMid,fontFamily:"'DM Sans',sans-serif"}}>YTD Commission</span><span style={{fontSize:13,fontWeight:700,color:C.green,fontFamily:"'DM Sans',sans-serif"}}>{fmtNOK(p.ytdKickback)}</span></div>
+                  <div style={{display:"flex",justifyContent:"space-between"}}><span style={{fontSize:12,color:C.textMid,fontFamily:"'DM Sans',sans-serif"}}>Total partner ARR</span><span style={{fontSize:12,fontWeight:700,color:C.text,fontFamily:"'DM Sans',sans-serif"}}>{fmtNOK(totalARR)}</span></div>
+                  <div style={{display:"flex",justifyContent:"space-between"}}><span style={{fontSize:12,color:C.textMid,fontFamily:"'DM Sans',sans-serif"}}>Implied commission %</span><span style={{fontSize:12,fontWeight:700,color:C.text,fontFamily:"'DM Sans',sans-serif"}}>{totalARR?((p.ytdKickback/totalARR)*100).toFixed(1):0}%</span></div>
+                </div>
+              ))
+            }
+            {isAdmin&&(
+              <div style={{display:"flex",justifyContent:"space-between",paddingTop:4}}>
+                <span style={{fontSize:13,fontWeight:700,color:C.text,fontFamily:"'DM Sans',sans-serif"}}>Total YTD</span>
+                <span style={{fontSize:13,fontWeight:700,color:C.green,fontFamily:"'DM Sans',sans-serif"}}>{fmtNOK(totalYTD)}</span>
+              </div>
+            )}
+          </div>
+        </Modal>
+      )}
+
+      {modal==="partners"&&(
+        <Modal title="Partner Portfolio Overview" onClose={()=>setModal(null)}>
+          <div style={{display:"flex",flexDirection:"column",gap:8}}>
+            {TIERS.map(tier=>{
+              const tPartners=state.partners.filter(p=>p.tier===tier);
+              return(
+                <div key={tier} style={{borderBottom:`1px solid ${C.cardBorder}`,paddingBottom:10}}>
+                  <div style={{fontSize:12,fontWeight:700,color:TIER_CONFIG[tier].color,marginBottom:6,fontFamily:"'DM Sans',sans-serif"}}>{tier} ({tPartners.length})</div>
+                  {tPartners.map(p=>(
+                    <div key={p.id} style={{display:"flex",justifyContent:"space-between",padding:"4px 0",fontSize:12,fontFamily:"'DM Sans',sans-serif"}}>
+                      <span style={{color:C.text}}>{p.name}</span>
+                      <span style={{color:C.textMid}}>{fmtNOK((state.customers[p.id]||[]).reduce((s,c)=>s+c.arr,0))} ARR</span>
+                    </div>
+                  ))}
+                </div>
+              );
+            })}
+          </div>
+        </Modal>
+      )}
     </div>
   );
 };
