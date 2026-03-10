@@ -115,13 +115,14 @@ const INIT_PARTNERS = [
 ];
 
 const INIT_LEADS = [
-  {id:1,partnerId:1,company:"TechStart Norge AS",type:"New Client",status:"New",date:"2025-03-04",size:"Large",value:120000,notes:"Referred by CEO. Large SaaS company, 40 employees.",activity:[]},
-  {id:2,partnerId:5,company:"Fjordline Logistics",type:"Referral",status:"In Progress",date:"2025-03-01",size:"Medium",value:60000,notes:"Needs demo of payroll module.",activity:[{date:"2025-03-02",text:"Demo scheduled for Mar 10"}]},
-  {id:3,partnerId:3,company:"Artisan Bryggeriet",type:"New Client",status:"Qualified",date:"2025-02-28",size:"Small",value:18000,notes:"Small craft brewery, interested in invoicing.",activity:[]},
-  {id:4,partnerId:1,company:"Nordic SaaS Group",type:"Refer Accounting Office",status:"New",date:"2025-03-05",size:"Large",value:96000,notes:"New agency, wants to explore Tripletex for their clients.",activity:[]},
-  {id:5,partnerId:2,company:"Haugesund Handel",type:"New Client",status:"Closed Won",date:"2025-02-20",size:"Small",value:18000,notes:"Successfully onboarded.",activity:[{date:"2025-02-22",text:"Contract signed"},{date:"2025-02-25",text:"Onboarding complete"}]},
-  {id:6,partnerId:3,company:"Vestland Shipping",type:"Referral",status:"Qualified",date:"2025-02-25",size:"Medium",value:48000,notes:"",activity:[]},
-  {id:7,partnerId:5,company:"Nordic Capital Fund",type:"New Client",status:"Closed Won",date:"2025-02-15",size:"Large",value:144000,notes:"Major win.",activity:[{date:"2025-02-18",text:"Contract signed"},{date:"2025-02-20",text:"Live on Tripletex"}]},
+  {id:1,partnerId:1,company:"TechStart Norge AS",type:"New Client",status:"In Progress",date:"2025-03-04",size:"Large",value:120000,notes:"Referred by CEO. Large SaaS company, 40 employees.",activity:[{date:"2025-03-05",text:"Intro call completed, demo booked for Mar 12"}],nudges:[{date:"2025-03-06",message:"Hi! Just wanted to check in — TechStart are keen, is the demo still on for Mar 12?",partnerId:1}]},
+  {id:2,partnerId:5,company:"Fjordline Logistics",type:"Referral",status:"In Progress",date:"2025-03-01",size:"Medium",value:60000,notes:"Needs demo of payroll module.",activity:[{date:"2025-03-02",text:"Demo scheduled for Mar 10"}],nudges:[]},
+  {id:3,partnerId:3,company:"Artisan Bryggeriet",type:"New Client",status:"Qualified",date:"2025-02-28",size:"Small",value:18000,notes:"Small craft brewery, interested in invoicing.",activity:[],nudges:[]},
+  {id:4,partnerId:1,company:"Nordic SaaS Group",type:"Refer Accounting Office",status:"Qualified",date:"2025-03-05",size:"Large",value:96000,notes:"New agency, wants to explore Tripletex for their clients.",activity:[{date:"2025-03-06",text:"Qualification call done — strong fit, moving to proposal"}],nudges:[]},
+  {id:5,partnerId:2,company:"Haugesund Handel",type:"New Client",status:"Closed Won",date:"2025-02-20",size:"Small",value:18000,notes:"Successfully onboarded.",activity:[{date:"2025-02-22",text:"Contract signed"},{date:"2025-02-25",text:"Onboarding complete"}],nudges:[]},
+  {id:6,partnerId:3,company:"Vestland Shipping",type:"Referral",status:"Qualified",date:"2025-02-25",size:"Medium",value:48000,notes:"",activity:[],nudges:[]},
+  {id:7,partnerId:5,company:"Nordic Capital Fund",type:"New Client",status:"Closed Won",date:"2025-02-15",size:"Large",value:144000,notes:"Major win.",activity:[{date:"2025-02-18",text:"Contract signed"},{date:"2025-02-20",text:"Live on Tripletex"}],nudges:[]},
+  {id:8,partnerId:4,company:"Stavanger Bygg AS",type:"New Client",status:"New",date:"2025-03-07",size:"Small",value:24000,notes:"Interested in invoicing and project tracking.",activity:[],nudges:[]},
 ];
 
 const INIT_CASES = [
@@ -153,7 +154,7 @@ const AppCtx = createContext(null);
 function reducer(state, action) {
   switch(action.type) {
     case "ADD_LEAD": {
-      const newLead = {...action.payload, id: Date.now(), date: new Date().toISOString().slice(0,10), status:"New", wins:0, activity:[]};
+      const newLead = {...action.payload, id: Date.now(), date: new Date().toISOString().slice(0,10), status:"New", wins:0, activity:[], nudges:[]};
       const p = state.partners.find(p=>p.id===action.payload.partnerId);
       const pts = p ? TIER_CONFIG[p.tier].leadBonus : 50;
       return {
@@ -227,6 +228,14 @@ function reducer(state, action) {
     }
     case "SET_PARTNER_GOAL": {
       return { ...state, goals: { ...state.goals, [action.partnerId]: { ...(state.goals?.[action.partnerId]||{}), [action.key]: action.value } } };
+    }
+    case "NUDGE_LEAD": {
+      const nudgedLead=state.leads.find(l=>l.id===action.id);
+      return {
+        ...state,
+        leads: state.leads.map(l=>l.id===action.id?{...l,nudges:[...(l.nudges||[]),{date:new Date().toISOString().slice(0,10),message:action.message,partnerId:action.partnerId}]}:l),
+        activityLog: [{id:Date.now(),type:"nudge",text:`Nudge sent on "${nudgedLead?.company}"`,partner:action.partnerId,date:new Date().toISOString().slice(0,10),icon:"🔔"},...state.activityLog],
+      };
     }
     default: return state;
   }
@@ -513,6 +522,23 @@ const LeadDetailModal=({lead,partner,onClose})=>{
         <div style={{flex:1}}><FInput v={comment} onChange={e=>setComment(e.target.value)} ph="Add activity note..."/></div>
         <BtnP ch="Add" small onClick={()=>{if(comment.trim()){dispatch({type:"ADD_LEAD_COMMENT",id:lead.id,text:comment});setComment("");}}}/>
       </div>
+      {(lead.nudges||[]).length>0&&<>
+        <SectionDivider title="Nudges Sent"/>
+        <div style={{display:"flex",flexDirection:"column",gap:8}}>
+          {(lead.nudges||[]).map((n,i)=>{
+            const nudgeParter=partner?.id===n.partnerId?partner:null;
+            return(
+              <div key={i} style={{background:C.goldLight,borderRadius:8,padding:"10px 14px",border:`1px solid ${C.gold}30`}}>
+                <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
+                  <span style={{fontSize:11,fontWeight:700,color:"#7A4800",fontFamily:"'DM Sans',sans-serif"}}>🔔 Nudge</span>
+                  <span style={{fontSize:10,color:"#7A4800",fontFamily:"'DM Sans',sans-serif"}}>{n.date}</span>
+                </div>
+                <div style={{fontSize:13,color:C.text,fontFamily:"'DM Sans',sans-serif"}}>{n.message}</div>
+              </div>
+            );
+          })}
+        </div>
+      </>}
     </Modal>
   );
 };
@@ -1091,10 +1117,51 @@ const PlanSection=({partner,isAdmin})=>{
   );
 };
 
+/* ═══════════════════ NUDGE MODAL ═══════════════════ */
+const NudgeModal=({lead,partner,onClose})=>{
+  const {dispatch}=useContext(AppCtx);
+  const [msg,setMsg]=useState(`Hi! Just checking in on ${lead.company} — any updates on where things stand? Happy to support if you need anything from our end.`);
+  const alreadyNudged=(lead.nudges||[]).some(n=>n.partnerId===partner.id);
+  return(
+    <Modal title="Nudge Sales Rep 🔔" subtitle={`Lead: ${lead.company} · ${lead.status}`} onClose={onClose}>
+      <div style={{background:C.blueLight,borderRadius:8,padding:"12px 14px",marginBottom:16,border:`1px solid ${C.blue}20`}}>
+        <div style={{fontSize:12,color:C.blue,fontFamily:"'DM Sans',sans-serif"}}>This message will be sent to the Tripletex sales rep handling this lead. It will also be visible to your account manager.</div>
+      </div>
+      {alreadyNudged&&(
+        <div style={{background:C.goldLight,borderRadius:8,padding:"10px 14px",marginBottom:14,border:`1px solid ${C.gold}30`}}>
+          <div style={{fontSize:11,fontWeight:700,color:"#7A4800",fontFamily:"'DM Sans',sans-serif"}}>⚠ You have already nudged this lead. Sending another is possible but use sparingly.</div>
+        </div>
+      )}
+      <div style={{marginBottom:14}}>
+        <FLabel t="Message to sales rep"/>
+        <FTextarea v={msg} onChange={e=>setMsg(e.target.value)} ph="Your message..."/>
+      </div>
+      <div style={{display:"flex",gap:8}}>
+        <div style={{flex:1,background:C.pageGrey,borderRadius:8,padding:"10px 12px"}}>
+          <div style={{fontSize:10,color:C.textLight,textTransform:"uppercase",letterSpacing:.6,fontFamily:"'DM Sans',sans-serif",marginBottom:2}}>Lead value</div>
+          <div style={{fontSize:14,fontWeight:700,color:C.text,fontFamily:"'Sora',sans-serif"}}>{lead.value.toLocaleString()} NOK</div>
+        </div>
+        <div style={{flex:1,background:C.pageGrey,borderRadius:8,padding:"10px 12px"}}>
+          <div style={{fontSize:10,color:C.textLight,textTransform:"uppercase",letterSpacing:.6,fontFamily:"'DM Sans',sans-serif",marginBottom:2}}>Status</div>
+          <div style={{fontSize:14,fontWeight:700,color:C.text,fontFamily:"'Sora',sans-serif"}}>{lead.status}</div>
+        </div>
+        <div style={{flex:1,background:C.greenLight,borderRadius:8,padding:"10px 12px",border:`1px solid ${C.greenMid}`}}>
+          <div style={{fontSize:10,color:C.greenDark,textTransform:"uppercase",letterSpacing:.6,fontFamily:"'DM Sans',sans-serif",marginBottom:2}}>Kickback</div>
+          <div style={{fontSize:14,fontWeight:700,color:C.green,fontFamily:"'Sora',sans-serif"}}>{Math.round(lead.value*(TIER_CONFIG[partner.tier].kickback/100)).toLocaleString()} NOK</div>
+        </div>
+      </div>
+      <div style={{marginTop:16}}>
+        <BtnP ch="Send Nudge 🔔" full onClick={()=>{if(msg.trim()){dispatch({type:"NUDGE_LEAD",id:lead.id,message:msg,partnerId:partner.id});onClose();}}}/>
+      </div>
+    </Modal>
+  );
+};
+
 /* ═══════════════════ LEAD TABLE (reusable) ═══════════════════ */
 const LeadTable=({leads,partner,isAdmin})=>{
   const {state}=useContext(AppCtx);
   const [selLead,setSelLead]=useState(null);
+  const [nudgeLead,setNudgeLead]=useState(null);
   const cfg=TIER_CONFIG[partner.tier];
   return(<>
     <div style={{overflowX:"auto"}}>
@@ -1112,9 +1179,16 @@ const LeadTable=({leads,partner,isAdmin})=>{
         <tbody>{leads.map(l=>{
           const submitter=isAdmin?state.partners.find(p=>p.id===l.partnerId):null;
           const submitterCfg=submitter?TIER_CONFIG[submitter.tier]:cfg;
+          const nudges=l.nudges||[];
+          const myNudge=!isAdmin&&nudges.some(n=>n.partnerId===partner.id);
           return(
             <tr key={l.id} onMouseEnter={e=>e.currentTarget.style.background=C.rowHover} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
-              <td style={{padding:"10px 12px",borderBottom:`1px solid ${C.cardBorder}`}}><span style={{fontWeight:600,fontSize:13,color:C.blue,cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}} onClick={()=>setSelLead(l)}>{l.company}</span></td>
+              <td style={{padding:"10px 12px",borderBottom:`1px solid ${C.cardBorder}`}}>
+                <div style={{display:"flex",alignItems:"center",gap:6}}>
+                  <span style={{fontWeight:600,fontSize:13,color:C.blue,cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}} onClick={()=>setSelLead(l)}>{l.company}</span>
+                  {isAdmin&&nudges.length>0&&<span title={`${nudges.length} nudge(s) sent`} onClick={()=>setSelLead(l)} style={{cursor:"pointer",fontSize:13}}>🔔</span>}
+                </div>
+              </td>
               {isAdmin&&<td style={{padding:"10px 12px",borderBottom:`1px solid ${C.cardBorder}`}}>
                 <div style={{fontWeight:600,fontSize:12,color:C.text,fontFamily:"'DM Sans',sans-serif"}}>{submitter?.name||"Unknown"}</div>
                 {submitter&&<TierBadge tier={submitter.tier}/>}
@@ -1124,13 +1198,23 @@ const LeadTable=({leads,partner,isAdmin})=>{
               <td style={{padding:"10px 12px",textAlign:"right",borderBottom:`1px solid ${C.cardBorder}`,fontSize:13,fontWeight:700,color:C.green,fontFamily:"'Sora',sans-serif"}}>{Math.round(l.value*(submitterCfg.kickback/100)).toLocaleString()}</td>
               <TD><Pill s={l.status}/></TD>
               <TD>{l.date}</TD>
-              <td style={{padding:"10px 12px",borderBottom:`1px solid ${C.cardBorder}`}}><button onClick={()=>setSelLead(l)} style={{background:C.blueLight,color:C.blue,border:"none",borderRadius:6,padding:"4px 10px",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}>Details</button></td>
+              <td style={{padding:"10px 12px",borderBottom:`1px solid ${C.cardBorder}`}}>
+                <div style={{display:"flex",gap:6}}>
+                  <button onClick={()=>setSelLead(l)} style={{background:C.blueLight,color:C.blue,border:"none",borderRadius:6,padding:"4px 10px",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}>Details</button>
+                  {!isAdmin&&l.status!=="Closed Won"&&(
+                    myNudge
+                      ?<span style={{fontSize:11,color:"#7A4800",fontWeight:700,padding:"4px 8px",background:C.goldLight,borderRadius:6,fontFamily:"'DM Sans',sans-serif"}}>🔔 Nudged</span>
+                      :<button onClick={()=>setNudgeLead(l)} style={{background:C.goldLight,color:"#7A4800",border:"none",borderRadius:6,padding:"4px 10px",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}>Nudge 🔔</button>
+                  )}
+                </div>
+              </td>
             </tr>
           );
         })}</tbody>
       </table>
     </div>
     {selLead&&<LeadDetailModal lead={selLead} partner={isAdmin?(state.partners.find(p=>p.id===selLead.partnerId)||partner):partner} onClose={()=>setSelLead(null)}/>}
+    {nudgeLead&&<NudgeModal lead={nudgeLead} partner={partner} onClose={()=>setNudgeLead(null)}/>}
   </>);
 };
 
@@ -2026,7 +2110,7 @@ const ChartWidget=({type,data,options,height=200})=>{
     if(inst.current){inst.current.destroy();inst.current=null;}
     inst.current=new window.Chart(ref.current,{type,data,options});
     return()=>{if(inst.current){inst.current.destroy();inst.current=null;}};
-  },[]);
+  },[JSON.stringify(data)]);
   return <canvas ref={ref} height={height} style={{width:"100%"}}/>;
 };
 
@@ -2275,7 +2359,7 @@ function App(){
 
   // Wrap dispatch with toast notifications
   const dispatchWithToast=(action)=>{
-    const msgs={ADD_LEAD:`Lead submitted! +50 pts`,COMPLETE_COURSE:`Course completed!`,ADD_CUSTOMER:`Client added! +100 pts`,UPDATE_LEAD_STATUS:(a)=>a.status==="Closed Won"?`Deal closed! 🎉 Commission earned`:null,ADD_CASE:`Case submitted!`};
+    const msgs={ADD_LEAD:`Lead submitted! +50 pts`,COMPLETE_COURSE:`Course completed!`,ADD_CUSTOMER:`Client added! +100 pts`,UPDATE_LEAD_STATUS:(a)=>a.status==="Closed Won"?`Deal closed! 🎉 Commission earned`:null,ADD_CASE:`Case submitted!`,NUDGE_LEAD:`Nudge sent! 🔔`};
     const msg=typeof msgs[action.type]==="function"?msgs[action.type](action):msgs[action.type];
     if(msg)setToast(msg);
     dispatch(action);
