@@ -2120,12 +2120,13 @@ const AnalyticsSection=({isAdmin,partner})=>{
   const [modal,setModal]=useState(null); // "arr"|"leads"|"won"|"commission"
 
   const basePartners=isAdmin?state.partners:[partner];
-  const viewPartners=isAdmin&&filterPartner!=="all"?basePartners.filter(p=>p.id===filterPartner):basePartners;
+  const fpNum=filterPartner==="all"?"all":Number(filterPartner);
+  const viewPartners=isAdmin&&fpNum!=="all"?basePartners.filter(p=>p.id===fpNum):basePartners;
   const viewLeads=isAdmin
-    ?(filterPartner==="all"?state.leads:state.leads.filter(l=>l.partnerId===filterPartner))
+    ?(fpNum==="all"?state.leads:state.leads.filter(l=>l.partnerId===fpNum))
     :state.leads.filter(l=>l.partnerId===partner.id);
   const viewCustomers=isAdmin
-    ?(filterPartner==="all"?Object.values(state.customers).flat():(state.customers[filterPartner]||[]))
+    ?(fpNum==="all"?Object.values(state.customers).flat():(state.customers[fpNum]||[]))
     :(state.customers[partner.id]||[]);
 
   const totalARR=viewCustomers.reduce((s,c)=>s+c.arr,0);
