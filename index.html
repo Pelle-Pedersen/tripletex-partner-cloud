@@ -77,11 +77,13 @@ const INIT_CUSTOMERS = {
     {id:"ec5",name:"Solberg Advokatfirma",arr:60000,added:"2025-02-28",status:"Active",industry:"Legal",size:"Large",notes:""},
     {id:"ec6",name:"Viken Handel AS",arr:18000,added:"2025-03-01",status:"Active",industry:"Retail",size:"Small",notes:""},
     {id:"ec7",name:"Arctic Logistics Group",arr:120000,added:"2025-03-04",status:"Active",industry:"Logistics",size:"Large",notes:"Upsell opportunity Q2"},
+    {id:"ec26",name:"Halden Industri AS",arr:72000,added:"2025-03-10",status:"Active",industry:"Manufacturing",size:"Large",notes:"Onboarded via referral from TechStart Norge"},
   ],
   2:[
     {id:"ec8",name:"Haugesund Handel AS",arr:18000,added:"2025-01-15",status:"Active",industry:"Retail",size:"Small",notes:""},
     {id:"ec9",name:"Meling Transport",arr:30000,added:"2025-02-02",status:"Active",industry:"Transport",size:"Medium",notes:""},
     {id:"ec10",name:"Westcoast Bygg AS",arr:24000,added:"2025-02-18",status:"Pending",industry:"Trades",size:"Small",notes:"Demo scheduled Mar 15"},
+    {id:"ec27",name:"Tromsø Tech AS",arr:54000,added:"2025-03-11",status:"Active",industry:"SaaS",size:"Medium",notes:"Expanding team, needs multi-user setup"},
   ],
   3:[
     {id:"ec11",name:"Bryggen Kafé AS",arr:12000,added:"2024-11-10",status:"Active",industry:"F&B",size:"Small",notes:""},
@@ -89,10 +91,12 @@ const INIT_CUSTOMERS = {
     {id:"ec13",name:"Vestland Rekruttering",arr:36000,added:"2025-01-20",status:"Active",industry:"HR",size:"Medium",notes:""},
     {id:"ec14",name:"Fiskebørsen AS",arr:48000,added:"2025-02-11",status:"Active",industry:"Fishing",size:"Medium",notes:""},
     {id:"ec15",name:"HarbourTech Solutions",arr:72000,added:"2025-03-01",status:"Pending",industry:"Tech",size:"Large",notes:""},
+    {id:"ec28",name:"Stavanger Maritime AS",arr:90000,added:"2025-03-08",status:"Active",industry:"Maritime",size:"Large",notes:"Fleet management integration planned for Q2"},
   ],
   4:[
     {id:"ec16",name:"Flåm Reiseliv AS",arr:14400,added:"2025-02-01",status:"Active",industry:"Tourism",size:"Small",notes:""},
     {id:"ec17",name:"Sognefjord Bygg",arr:18000,added:"2025-02-20",status:"Active",industry:"Trades",size:"Small",notes:""},
+    {id:"ec29",name:"Nordland Bygg AS",arr:30000,added:"2025-03-09",status:"Pending",industry:"Trades",size:"Medium",notes:"Awaiting project module demo"},
   ],
   5:[
     {id:"ec18",name:"Aker Digital AS",arr:144000,added:"2024-10-12",status:"Active",industry:"Tech",size:"Large",notes:""},
@@ -103,6 +107,29 @@ const INIT_CUSTOMERS = {
     {id:"ec23",name:"Sollia Consulting",arr:30000,added:"2025-02-22",status:"Pending",industry:"Consulting",size:"Small",notes:""},
     {id:"ec24",name:"Bredband Norge AS",arr:96000,added:"2025-03-01",status:"Active",industry:"Telecom",size:"Large",notes:""},
     {id:"ec25",name:"Capital Nordic AS",arr:120000,added:"2025-03-04",status:"Active",industry:"Finance",size:"Large",notes:""},
+    {id:"ec30",name:"Kristiansand Handel AS",arr:42000,added:"2025-03-12",status:"Active",industry:"Retail",size:"Medium",notes:"Chain of 4 stores, needs consolidated reporting"},
+  ],
+  6:[
+    {id:"ec43",name:"Trondheim Teknologi AS",arr:78000,added:"2025-02-10",status:"Active",industry:"SaaS",size:"Large",notes:"First client via inbound inquiry"},
+    {id:"ec44",name:"Nidaros Bygg AS",arr:36000,added:"2025-02-24",status:"Active",industry:"Trades",size:"Medium",notes:""},
+    {id:"ec45",name:"Bispegata Kafé AS",arr:14400,added:"2025-03-05",status:"Active",industry:"F&B",size:"Small",notes:""},
+  ],
+  7:[
+    {id:"ec46",name:"Sørlandets Bilservice AS",arr:24000,added:"2025-02-18",status:"Active",industry:"Automotive",size:"Medium",notes:""},
+    {id:"ec47",name:"Agder Rekruttering AS",arr:18000,added:"2025-03-06",status:"Pending",industry:"HR",size:"Small",notes:"Contract signed, onboarding in progress"},
+  ],
+  8:[
+    {id:"ec48",name:"Arctic Seafood AS",arr:108000,added:"2025-01-20",status:"Active",industry:"Fishing",size:"Large",notes:"Export-focused, needs multi-currency support"},
+    {id:"ec49",name:"Ishavsbyen Handel AS",arr:30000,added:"2025-02-08",status:"Active",industry:"Retail",size:"Medium",notes:""},
+    {id:"ec50",name:"Polarlys Transport AS",arr:42000,added:"2025-02-28",status:"Active",industry:"Transport",size:"Medium",notes:"Fleet of 12 vehicles, uses expense module heavily"},
+  ],
+  9:[
+    {id:"ec51",name:"Rogaland Elektro AS",arr:36000,added:"2025-02-15",status:"Active",industry:"Energy",size:"Medium",notes:""},
+    {id:"ec52",name:"Sandnes Bygg AS",arr:18000,added:"2025-03-08",status:"Pending",industry:"Trades",size:"Small",notes:"Awaiting signed contract"},
+  ],
+  10:[
+    {id:"ec53",name:"Sunnmøre Fiskeri AS",arr:96000,added:"2025-01-28",status:"Active",industry:"Fishing",size:"Large",notes:"One of the largest clients in the region"},
+    {id:"ec54",name:"Møre Shipping AS",arr:54000,added:"2025-02-20",status:"Active",industry:"Maritime",size:"Medium",notes:""},
   ],
 };
 
@@ -112,6 +139,11 @@ const INIT_PARTNERS = [
   {id:3,name:"Bergens Økonomi AS",tier:"Silver",points:2890,leads:5,certified:true,revenue:1350000,joined:"Jun 2022",wins:3,ytdKickback:26400,contact:"Silje Bakke",email:"silje@bergens.no",phone:"+47 922 34567",courses:[1,2],region:"Bergen"},
   {id:4,name:"Fjord Consulting AS",tier:"Bronze",points:890,leads:1,certified:false,revenue:310000,joined:"Nov 2023",wins:0,ytdKickback:1620,contact:"Lars Dahl",email:"lars@fjord.no",phone:"+47 933 45678",courses:[1],region:"Stavanger"},
   {id:5,name:"Oslo Regnskapspartner",tier:"Gold",points:5210,leads:9,certified:true,revenue:3100000,joined:"Sep 2022",wins:7,ytdKickback:111240,contact:"Ingrid Moen",email:"ingrid@oslorp.no",phone:"+47 944 56789",courses:[1,2,3,4,5],region:"Oslo"},
+  {id:6,name:"Trondheim Regnskap AS",tier:"Silver",points:1840,leads:4,certified:true,revenue:860000,joined:"Apr 2023",wins:3,ytdKickback:12840,contact:"Kari Solberg",email:"kari@trondregnskap.no",phone:"+47 955 67890",courses:[1,2],region:"Trondheim"},
+  {id:7,name:"Kristiansand Økonomi AS",tier:"Bronze",points:620,leads:2,certified:false,revenue:290000,joined:"Aug 2023",wins:1,ytdKickback:2100,contact:"Anders Olsen",email:"anders@kristokonomi.no",phone:"+47 966 78901",courses:[1],region:"Kristiansand"},
+  {id:8,name:"Tromsø Revisjon AS",tier:"Silver",points:2150,leads:5,certified:true,revenue:1120000,joined:"Feb 2023",wins:4,ytdKickback:18000,contact:"Nina Arctander",email:"nina@tromsorevisjon.no",phone:"+47 977 89012",courses:[1,2,3],region:"Tromsø"},
+  {id:9,name:"Stavanger Regnskapskontor AS",tier:"Bronze",points:740,leads:2,certified:false,revenue:320000,joined:"Oct 2023",wins:1,ytdKickback:2700,contact:"Pål Rege",email:"pal@stavregnskap.no",phone:"+47 988 90123",courses:[1],region:"Stavanger"},
+  {id:10,name:"Ålesund Økonomi AS",tier:"Bronze",points:910,leads:3,certified:false,revenue:510000,joined:"Jul 2023",wins:2,ytdKickback:7500,contact:"Hilde Sæther",email:"hilde@alesundokonomi.no",phone:"+47 999 01234",courses:[1,2],region:"Ålesund"},
 ];
 
 const INIT_LEADS = [
@@ -123,6 +155,20 @@ const INIT_LEADS = [
   {id:6,partnerId:3,company:"Vestland Shipping",type:"Referral",status:"Qualified",date:"2025-02-25",size:"Medium",value:48000,notes:"",activity:[],nudges:[]},
   {id:7,partnerId:5,company:"Nordic Capital Fund",type:"New Client",status:"Closed Won",date:"2025-02-15",size:"Large",value:144000,notes:"Major win.",activity:[{date:"2025-02-18",text:"Contract signed"},{date:"2025-02-20",text:"Live on Tripletex"}],nudges:[]},
   {id:8,partnerId:4,company:"Stavanger Bygg AS",type:"New Client",status:"New",date:"2025-03-07",size:"Small",value:24000,notes:"Interested in invoicing and project tracking.",activity:[],nudges:[]},
+  {id:9,partnerId:1,company:"Halden Industri AS",type:"Referral",status:"Closed Won",date:"2025-03-08",size:"Large",value:72000,notes:"Referred by TechStart Norge AS CEO. Signed quickly.",activity:[{date:"2025-03-09",text:"Intro call done — strong fit"},{date:"2025-03-10",text:"Contract signed. Onboarding started."}],nudges:[]},
+  {id:10,partnerId:2,company:"Tromsø Tech AS",type:"New Client",status:"Closed Won",date:"2025-03-09",size:"Medium",value:54000,notes:"Inbound via partner website. Needed multi-user accounting.",activity:[{date:"2025-03-10",text:"Demo completed"},{date:"2025-03-11",text:"Contract signed"}],nudges:[]},
+  {id:11,partnerId:3,company:"Stavanger Maritime AS",type:"New Client",status:"Closed Won",date:"2025-03-06",size:"Large",value:90000,notes:"Large maritime firm, interested in fleet expense tracking.",activity:[{date:"2025-03-07",text:"Qualification call — great fit"},{date:"2025-03-08",text:"Proposal sent"},{date:"2025-03-09",text:"Contract signed"}],nudges:[]},
+  {id:12,partnerId:4,company:"Nordland Bygg AS",type:"New Client",status:"In Progress",date:"2025-03-09",size:"Medium",value:30000,notes:"Met at construction trade fair. Needs project module demo.",activity:[{date:"2025-03-10",text:"Intro call completed, demo booked for Mar 17"}],nudges:[{date:"2025-03-11",message:"Just a heads up — Nordland Bygg are eager, confirming demo for Mar 17?",partnerId:4}]},
+  {id:13,partnerId:5,company:"Kristiansand Handel AS",type:"New Client",status:"Closed Won",date:"2025-03-10",size:"Medium",value:42000,notes:"Chain of 4 stores, needs consolidated reporting across locations.",activity:[{date:"2025-03-11",text:"Demo of multi-company module"},{date:"2025-03-12",text:"Contract signed. All 4 stores to be onboarded."}],nudges:[]},
+  {id:14,partnerId:6,company:"Trondheim Teknologi AS",type:"New Client",status:"Closed Won",date:"2025-02-08",size:"Large",value:78000,notes:"Inbound inquiry via Tripletex website. Strong product fit.",activity:[{date:"2025-02-09",text:"Intro call — great fit"},{date:"2025-02-10",text:"Contract signed"}],nudges:[]},
+  {id:15,partnerId:6,company:"Nidaros Media AS",type:"New Client",status:"In Progress",date:"2025-03-08",size:"Medium",value:36000,notes:"Creative agency, needs project billing and invoicing.",activity:[{date:"2025-03-09",text:"Demo booked for Mar 18"}],nudges:[{date:"2025-03-10",message:"Nidaros Media confirmed for Mar 18 — any prep needed?",partnerId:6}]},
+  {id:16,partnerId:7,company:"Sørlandets Bilservice AS",type:"New Client",status:"Closed Won",date:"2025-02-16",size:"Medium",value:24000,notes:"Auto workshop, primarily using invoicing and expense tracking.",activity:[{date:"2025-02-17",text:"Demo completed"},{date:"2025-02-18",text:"Contract signed"}],nudges:[]},
+  {id:17,partnerId:7,company:"Agder Rekruttering AS",type:"New Client",status:"In Progress",date:"2025-03-05",size:"Small",value:18000,notes:"HR firm, evaluating payroll module.",activity:[{date:"2025-03-06",text:"Demo of payroll — positive reaction"}],nudges:[]},
+  {id:18,partnerId:8,company:"Arctic Seafood AS",type:"New Client",status:"Closed Won",date:"2025-01-18",size:"Large",value:108000,notes:"Large export-focused fishing company. Multi-currency and project tracking key requirements.",activity:[{date:"2025-01-19",text:"Qualification call"},{date:"2025-01-20",text:"Contract signed"}],nudges:[]},
+  {id:19,partnerId:8,company:"Hammerfest Energi AS",type:"Referral",status:"Qualified",date:"2025-03-07",size:"Large",value:96000,notes:"Referred by Arctic Seafood CEO. Energy company evaluating Tripletex for full finance stack.",activity:[{date:"2025-03-08",text:"Qualification call complete — moving to proposal"}],nudges:[]},
+  {id:20,partnerId:9,company:"Rogaland Elektro AS",type:"New Client",status:"Closed Won",date:"2025-02-13",size:"Medium",value:36000,notes:"Electrical contractor, invoicing and project tracking.",activity:[{date:"2025-02-14",text:"Demo completed"},{date:"2025-02-15",text:"Contract signed"}],nudges:[]},
+  {id:21,partnerId:10,company:"Sunnmøre Fiskeri AS",type:"New Client",status:"Closed Won",date:"2025-01-26",size:"Large",value:96000,notes:"Major regional fishery. Needed full accounting suite.",activity:[{date:"2025-01-27",text:"Proposal presented"},{date:"2025-01-28",text:"Contract signed"}],nudges:[]},
+  {id:22,partnerId:10,company:"Ålesund Frakt AS",type:"New Client",status:"New",date:"2025-03-11",size:"Small",value:18000,notes:"Small freight company, interested in expense and invoicing modules.",activity:[],nudges:[]},
 ];
 
 const INIT_CASES = [
@@ -131,6 +177,14 @@ const INIT_CASES = [
   {id:3,num:"C-00371",partnerId:2,title:"New user onboarding question",priority:"Low",status:"Resolved",created:"2025-02-28",cat:"Onboarding",description:"Partner needed guidance on how to set up new user roles for a client.",comments:[{author:"Support",date:"2025-03-01",text:"Resolved via documentation link. Closing."}]},
   {id:4,num:"C-00401",partnerId:5,title:"API rate limit exceeded",priority:"High",status:"In Progress",created:"2025-03-04",cat:"Technical",description:"Integration hitting 429 errors during bulk sync operations.",comments:[]},
   {id:5,num:"C-00358",partnerId:1,title:"Bulk import CSV format",priority:"Medium",status:"Resolved",created:"2025-02-20",cat:"Feature",description:"Partner needed the correct CSV template for bulk client import.",comments:[]},
+  {id:6,num:"C-00418",partnerId:1,title:"Halden Industri AS — multi-company setup",priority:"Medium",status:"Open",created:"2025-03-10",cat:"Onboarding",description:"Halden Industri AS needs to link two subsidiary companies under one parent account. Guidance requested on multi-company configuration.",comments:[{author:"Marte Holm",date:"2025-03-10",text:"Confirmed with client — they have two legal entities. Escalating to onboarding team."}]},
+  {id:7,num:"C-00421",partnerId:2,title:"Tromsø Tech AS — user role permissions",priority:"Low",status:"In Progress",created:"2025-03-11",cat:"Onboarding",description:"New client Tromsø Tech AS needs custom role set up for read-only bookkeeper access.",comments:[{author:"Erik Strand",date:"2025-03-12",text:"Walked through role configuration with client. Pending confirmation."}]},
+  {id:8,num:"C-00423",partnerId:3,title:"Stavanger Maritime AS — expense import failure",priority:"High",status:"Open",created:"2025-03-09",cat:"Technical",description:"Stavanger Maritime AS reports that bulk expense imports are failing with a 500 error. Affects all import attempts since onboarding.",comments:[{author:"Silje Bakke",date:"2025-03-09",text:"Reproduced locally. Escalated to Tripletex technical team."}]},
+  {id:9,num:"C-00427",partnerId:5,title:"Kristiansand Handel AS — consolidated report setup",priority:"Medium",status:"Open",created:"2025-03-12",cat:"Feature",description:"Client needs a consolidated P&L report spanning all 4 store entities. Asking if this is supported natively or requires custom export.",comments:[]},
+  {id:10,num:"C-00429",partnerId:6,title:"Trondheim Teknologi AS — VAT reporting question",priority:"Medium",status:"Open",created:"2025-03-10",cat:"Feature",description:"Client unsure how to configure VAT codes for mixed domestic and EU sales. Needs guidance on correct setup.",comments:[{author:"Kari Solberg",date:"2025-03-11",text:"Forwarded the VAT configuration guide. Client reviewing and will follow up."}]},
+  {id:11,num:"C-00433",partnerId:8,title:"Arctic Seafood AS — bank reconciliation mismatch",priority:"High",status:"In Progress",created:"2025-03-08",cat:"Technical",description:"Client reports unexplained discrepancy of NOK 14,200 in bank reconciliation after month-end closing. Possibly related to a currency conversion rounding issue.",comments:[{author:"Nina Arctander",date:"2025-03-09",text:"Reproduced in test environment. Suspect rounding in multi-currency posting. Escalated to Tripletex support."}]},
+  {id:12,num:"C-00436",partnerId:9,title:"Rogaland Elektro AS — custom invoice template",priority:"Low",status:"In Progress",created:"2025-03-09",cat:"Feature",description:"Client wants a custom invoice template with their logo and specific line-item layout. Needs guidance on template editor.",comments:[{author:"Pål Rege",date:"2025-03-10",text:"Shared template documentation. Client working on it independently."}]},
+  {id:13,num:"C-00440",partnerId:7,title:"Agder Rekruttering AS — payroll module onboarding",priority:"Low",status:"Open",created:"2025-03-06",cat:"Onboarding",description:"New client needs walkthrough of payroll setup, including employee tax cards and pension reporting.",comments:[]},
 ];
 
 const COURSES = [
@@ -147,6 +201,34 @@ const ACTIVITY_LOG_INIT = [
   {id:3,type:"lead",text:'Lead closed: "Nordic Capital Fund"',partner:5,date:"2025-02-18",icon:"🎯"},
   {id:4,type:"tier",text:'Partner upgraded to Gold tier',partner:1,date:"2025-02-10",icon:"🥇"},
   {id:5,type:"course",text:'Completed: "Advanced Bookkeeping Module"',partner:3,date:"2025-02-05",icon:"🎓"},
+  {id:6,type:"lead",text:'Lead closed: "Halden Industri AS"',partner:1,date:"2025-03-10",icon:"🎯"},
+  {id:7,type:"customer",text:'New client onboarded: "Halden Industri AS"',partner:1,date:"2025-03-10",icon:"👥"},
+  {id:8,type:"lead",text:'Lead closed: "Tromsø Tech AS"',partner:2,date:"2025-03-11",icon:"🎯"},
+  {id:9,type:"customer",text:'New client onboarded: "Tromsø Tech AS"',partner:2,date:"2025-03-11",icon:"👥"},
+  {id:10,type:"lead",text:'Lead closed: "Stavanger Maritime AS"',partner:3,date:"2025-03-09",icon:"🎯"},
+  {id:11,type:"customer",text:'New client onboarded: "Stavanger Maritime AS"',partner:3,date:"2025-03-09",icon:"👥"},
+  {id:12,type:"lead",text:'New lead submitted: "Nordland Bygg AS"',partner:4,date:"2025-03-09",icon:"📋"},
+  {id:13,type:"lead",text:'Lead closed: "Kristiansand Handel AS"',partner:5,date:"2025-03-12",icon:"🎯"},
+  {id:14,type:"customer",text:'New client onboarded: "Kristiansand Handel AS"',partner:5,date:"2025-03-12",icon:"👥"},
+  {id:15,type:"tier",text:'New partner joined: Trondheim Regnskap AS',partner:6,date:"2025-04-03",icon:"🤝"},
+  {id:16,type:"lead",text:'Lead closed: "Trondheim Teknologi AS"',partner:6,date:"2025-02-10",icon:"🎯"},
+  {id:17,type:"customer",text:'New client onboarded: "Trondheim Teknologi AS"',partner:6,date:"2025-02-10",icon:"👥"},
+  {id:18,type:"lead",text:'New lead submitted: "Nidaros Media AS"',partner:6,date:"2025-03-08",icon:"📋"},
+  {id:19,type:"tier",text:'New partner joined: Kristiansand Økonomi AS',partner:7,date:"2025-08-15",icon:"🤝"},
+  {id:20,type:"lead",text:'Lead closed: "Sørlandets Bilservice AS"',partner:7,date:"2025-02-18",icon:"🎯"},
+  {id:21,type:"customer",text:'New client onboarded: "Sørlandets Bilservice AS"',partner:7,date:"2025-02-18",icon:"👥"},
+  {id:22,type:"tier",text:'New partner joined: Tromsø Revisjon AS',partner:8,date:"2025-02-05",icon:"🤝"},
+  {id:23,type:"lead",text:'Lead closed: "Arctic Seafood AS"',partner:8,date:"2025-01-20",icon:"🎯"},
+  {id:24,type:"customer",text:'New client onboarded: "Arctic Seafood AS"',partner:8,date:"2025-01-20",icon:"👥"},
+  {id:25,type:"course",text:'Completed: "Partner Sales Playbook"',partner:8,date:"2025-02-18",icon:"🎓"},
+  {id:26,type:"tier",text:'New partner joined: Stavanger Regnskapskontor AS',partner:9,date:"2025-10-12",icon:"🤝"},
+  {id:27,type:"lead",text:'Lead closed: "Rogaland Elektro AS"',partner:9,date:"2025-02-15",icon:"🎯"},
+  {id:28,type:"customer",text:'New client onboarded: "Rogaland Elektro AS"',partner:9,date:"2025-02-15",icon:"👥"},
+  {id:29,type:"tier",text:'New partner joined: Ålesund Økonomi AS',partner:10,date:"2025-07-10",icon:"🤝"},
+  {id:30,type:"lead",text:'Lead closed: "Sunnmøre Fiskeri AS"',partner:10,date:"2025-01-28",icon:"🎯"},
+  {id:31,type:"customer",text:'New client onboarded: "Sunnmøre Fiskeri AS"',partner:10,date:"2025-01-28",icon:"👥"},
+  {id:32,type:"course",text:'Completed: "Advanced Bookkeeping Module"',partner:10,date:"2025-02-12",icon:"🎓"},
+  {id:33,type:"lead",text:'New lead submitted: "Ålesund Frakt AS"',partner:10,date:"2025-03-11",icon:"📋"},
 ];
 
 /* ═══════════════════ SHARED STATE (useReducer) ═══════════════════ */
